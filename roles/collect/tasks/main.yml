@@ -1,0 +1,17 @@
+---
+- name: Wait for {{ inventory_hostname }} ssh to be ready
+  local_action:
+    module: wait_for
+    port: "22"
+    host: "{{ inventory_hostname }}"
+    search_regex: OpenSSH
+    delay: 1
+  remote_user: root
+
+- name: Execute lldptool command and store output
+  command: lldptool -t -n -i ens15f1
+  register: lldp_output
+  remote_user: root
+
+- name: Display lldp_output
+  debug: msg="{{ lldp_output.stdout.split('\n') }}"
