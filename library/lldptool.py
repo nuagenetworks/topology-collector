@@ -48,11 +48,22 @@ def main():
 
     delta = endd - startd
 
+    if err is None:
+        err = b('')
+
     if out is None:
         out = b('')
 
-    if err is None:
-        err = b('')
+    if 2 > len(out.split('\n')):
+        module.exit_json(cmd = cmd,
+                         stdout = out,
+                         stderr = err.strip(),
+                         rawout = out,
+                         rc = rc,
+                         start = str(startd),
+                         end = str(endd),
+                         delta = str(delta),
+                         changed=False)
 
     scratch = out.replace('End of LLDPDU TLV', '').replace('\n\t', '\t').strip()
     parsed = ""

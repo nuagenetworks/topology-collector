@@ -9,7 +9,7 @@
   remote_user: root
 
 - name: Execute lldptool
-  lldptool: port=ens15f1
+  lldptool: port=svc-rl-tap2@svc-rl-tap1
   register: lldp_output
   remote_user: root
 
