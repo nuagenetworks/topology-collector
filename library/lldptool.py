@@ -78,9 +78,9 @@ def main():
     parsed = "{ %s }" % parsed
         
     module.exit_json(cmd = cmd,
-                     stdout = out,
+                     stdout = parsed,
                      stderr = err.strip(),
-                     json = parsed,
+                     rawout = out,
                      rc = rc,
                      start = str(startd),
                      end = str(endd),

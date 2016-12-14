@@ -16,5 +16,5 @@
 - name: Display lldp_output
   debug: msg="{{ lldp_output }}"
 
-- name: Display json output
-  debug: msg="{{ lldp_output.json }}"
+- name: Display stdout output
+  debug: msg="{{ lldp_output.stdout }}"
