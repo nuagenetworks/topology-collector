@@ -1,0 +1,5 @@
+*.log
+*.swp
+*.retry
+*.bak
+*~
