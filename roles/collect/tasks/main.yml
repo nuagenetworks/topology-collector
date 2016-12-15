@@ -8,13 +8,13 @@
     delay: 1
   remote_user: root
 
-- name: Execute lldptool
-  lldptool: port=svc-rl-tap2@svc-rl-tap1
-  register: lldp_output
+- name: Execute lldp_neighbor_tlv
+  lldp_neighbor_tlv: interface=eno1
+  register: neighbor_tlv
   remote_user: root
 
-- name: Display lldp_output
-  debug: msg="{{ lldp_output }}"
+- name: Display neighbor_tlv
+  debug: msg="{{ neighbor_tlv }}"
 
 - name: Display stdout output
-  debug: msg="{{ lldp_output.stdout }}"
+  debug: msg="{{ neighbor_tlv.stdout }}"
