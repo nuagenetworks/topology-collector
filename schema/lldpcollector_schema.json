@@ -39,9 +39,12 @@
                     "type": "string",
                     "description": "The name of the interface"
                 },
-                "bus-info": {
-                    "type": "string",
-                    "description": "The PCI bus information for the interface"
+                "vf-info": {
+                    "type": "array",
+                    "description": "The VF information for the interface",
+                    "items": {
+                        "$ref": "#/definitions/vf-info"
+                    }
                 },
                 "neighbor-system-name": {
                     "type": "string",
@@ -52,7 +55,20 @@
                     "description": "The port designation on the connected neighbor"
                 }
             },
-            "required": [ "name", "bus-info", "neighbor-system-name", "neighbor-system-port" ]
+            "required": [ "name", "vf-info", "neighbor-system-name", "neighbor-system-port" ]
+        },
+        "vf-info": {
+            "properties": {
+                "pci-id": {
+                    "type": "string",
+                    "description": "The VF PCI ID"
+                },
+                "device-name": {
+                    "type": "string",
+                    "description": "The VF device name"
+                }
+            },
+            "required": [ "pci-id", "device-name" ]
         }
     }
 }
