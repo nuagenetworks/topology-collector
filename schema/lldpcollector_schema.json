@@ -1,0 +1,58 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Nuage LLDP Port mapping",
+    "description": "A report of the port mapping between a collection of compute hosts and NSG TOR devices",
+    "type": "object",
+    "properties": {
+        "datetime": {
+            "description": "The date and time this report was generated",
+            "type": "string"
+        },
+        "compute-hosts": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/compute-host"
+            }
+        }
+    },
+    "required": ["datetime", "compute-hosts"],
+    "definitions": {
+        "compute-host": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "System name of the compute host"
+                },
+                "interfaces": {
+                    "type": "array",
+                    "description": "zero or more interfaces on the compute host",
+                    "items": {
+                        "$ref": "#/definitions/interface"
+                    }
+                }
+            },
+            "required": [ "name", "interfaces" ]
+        },
+        "interface": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "The name of the interface"
+                },
+                "bus-info": {
+                    "type": "string",
+                    "description": "The PCI bus information for the interface"
+                },
+                "neighbor-system-name": {
+                    "type": "string",
+                    "description": "The system name of the connected neighbor"
+                },
+                "neighbor-system-port": {
+                    "type": "string",
+                    "description": "The port designation on the connected neighbor"
+                }
+            },
+            "required": [ "name", "bus-info", "neighbor-system-name", "neighbor-system-port" ]
+        }
+    }
+}

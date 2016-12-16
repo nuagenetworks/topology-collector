@@ -1,0 +1,40 @@
+{
+  "datetime": "Fri Dec 16 08:58:43 PST 2016",
+  "compute-hosts": [
+      {
+        "name": "cas-cs3-022",
+        "interfaces": [
+          {
+            "name": "ens15f0",
+            "bus-info": "0000:03:00.0",
+            "neighbor-system-name": "cas-sf3-009",
+            "neighbor-system-port": "1/1/1"
+          },
+          {
+            "name": "ens15f1",
+            "bus-info": "0000:03:00.1",
+            "neighbor-system-name": "cas-sf3-009",
+            "neighbor-system-port": "1/2/1"
+          }
+        ]
+      },
+      {
+        "name": "cas-cs3-023",
+        "interfaces": [
+          {
+            "name": "ens15f0",
+            "bus-info": "0000:03:00.0",
+            "neighbor-system-name": "cas-sf3-009",
+            "neighbor-system-port": "1/3/1"
+          },
+          {
+            "name": "ens15f1",
+            "bus-info": "0000:03:00.1",
+            "neighbor-system-name": "cas-sf3-009",
+            "neighbor-system-port": "1/4/1"
+          }
+        ]
+      }
+    ]
+}
+
