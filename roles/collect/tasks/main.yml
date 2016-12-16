@@ -6,15 +6,28 @@
     host: "{{ inventory_hostname }}"
     search_regex: OpenSSH
     delay: 1
-  remote_user: root
+
+- name: Execute interfaces
+  interfaces: state=UP regex=eno
+  register: interface_list
+
+- name: Display full output
+  debug: msg="{{ interface_list }}"
+
+- name: Display interface_list
+  debug: msg="{{ interface_list.matches }}"
 
 - name: Execute lldp_neighbor_tlv
-  lldp_neighbor_tlv: interface=eno1
+  lldp_neighbor_tlv: interface={{ item }}
+  with_items: "{{ interface_list.matches }}"
   register: neighbor_tlv
-  remote_user: root
 
 - name: Display neighbor_tlv
-  debug: msg="{{ neighbor_tlv }}"
+  debug: msg="{{ item }}"
+  with_items: "{{ neighbor_tlv.results }}"
 
-- name: Display stdout output
-  debug: msg="{{ neighbor_tlv.stdout }}"
+- name: Write out a file of TLVs
+  template: src=output.j2 dest=./output.txt
+  with_items: "{{ neighbor_tlv.results }}"
+  delegate_to: 127.0.0.1
+

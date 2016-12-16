@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import datetime
+import re
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import b
 
@@ -43,7 +44,7 @@ EXAMPLES = '''
 
 
 def convert_lldptool_output_to_json(lldptool_out):
-    if lldptool_out is None or lldptool_out == b(''):
+    if lldptool_out is None:
         return "{}"
     scratch = lldptool_out.replace('End of LLDPDU TLV', '').replace('\n\t', '\t').strip()
     parsed = ""
@@ -77,19 +78,22 @@ def convert_lldptool_output_to_json(lldptool_out):
 
 def main():
     arg_spec = dict(
-        interface=dict(required=True)
+        state=dict(required=True),
+        regex=dict(default=['*'])
     )
 
     module = AnsibleModule(argument_spec=arg_spec)
 
-    interface = module.params['interface']
+    state = module.params['state']
+    regex = module.params['regex']
 
-    LLDPTOOL = module.get_bin_path('lldptool', True)
+    IPCMD = module.get_bin_path('ip', True)
 
     startd = datetime.datetime.now()
 
-    cmd = "%s -t -n -i %s" % (LLDPTOOL, interface)
-    rc, out, err = module.run_command(cmd, check_rc=True)
+    cmd = "%s addr" % (IPCMD)
+
+    rc, out, err = module.run_command(cmd, check_rc=False)
 
     endd = datetime.datetime.now()
 
@@ -112,13 +116,18 @@ def main():
                          delta=str(delta),
                          changed=False)
 
-    parsed = convert_lldptool_output_to_json(out)
+    parsed = []
+    match = "state %s" % state
+    for line in  out.split('\n'):
+        if match in line:
+            if re.search( regex, line.split(': ')[1] ):
+                parsed.append(line.split(': ')[1])
 
     module.exit_json(cmd=cmd,
-                     stdout=parsed,
-                     stderr=err.strip(),
+                     matches=parsed,
                      rawout=out,
-                     rc=rc,
+                     regex=regex,
+                     state=state,
                      start=str(startd),
                      end=str(endd),
                      delta=str(delta),
