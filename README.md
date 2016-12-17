@@ -28,7 +28,7 @@ The name of the file will be of the form `collector.<date-time>.json`. For examp
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "title": "Nuage LLDP Port mapping",
-    "description": "A report of the port mapping between a collection of compute hosts and NSG TOR devices",
+    "description": "A report of the port mapping between a collection of compute hosts and VSG ToR devices",
     "type": "object",
     "properties": {
         "datetime": {
@@ -76,6 +76,10 @@ The name of the file will be of the form `collector.<date-time>.json`. For examp
                 "neighbor-system-name": {
                     "type": "string",
                     "description": "The system name of the connected neighbor"
+                },
+                "neighbor-system-mgmt-ip": {
+                    "type": "string",
+                    "description": "The management IP address of the connected neighbor"
                 },
                 "neighbor-system-port": {
                     "type": "string",
@@ -135,6 +139,7 @@ The name of the file will be of the form `collector.<date-time>.json`. For examp
                         }
                     ],
                     "neighbor-system-name": "cas-sf3-009",
+                    "neighbor-system-mgmt-ip": "10.10.10.1",
                     "neighbor-system-port": "1/1/1"
                 },
                 {
@@ -162,6 +167,7 @@ The name of the file will be of the form `collector.<date-time>.json`. For examp
                         }
                     ],
                     "neighbor-system-name": "cas-sf3-009",
+                    "neighbor-system-mgmt-ip": "10.10.10.2",
                     "neighbor-system-port": "1/1/1"
                 }
             ]
@@ -194,6 +200,7 @@ The name of the file will be of the form `collector.<date-time>.json`. For examp
                         }
                     ],
                     "neighbor-system-name": "cas-sf3-009",
+                    "neighbor-system-mgmt-ip": "10.10.10.3",
                     "neighbor-system-port": "1/1/1"
                 },
                 {
@@ -221,6 +228,7 @@ The name of the file will be of the form `collector.<date-time>.json`. For examp
                         }
                     ],
                     "neighbor-system-name": "cas-sf3-009",
+                    "neighbor-system-mgmt-ip": "10.10.10.4",
                     "neighbor-system-port": "1/1/1"
                 }
             ]

@@ -29,6 +29,7 @@
                         }
                     ],
                     "neighbor-system-name": "cas-sf3-009",
+                    "neighbor-system-mgmt-ip": "10.10.10.1",
                     "neighbor-system-port": "1/1/1"
                 },
                 {
@@ -56,6 +57,7 @@
                         }
                     ],
                     "neighbor-system-name": "cas-sf3-009",
+                    "neighbor-system-mgmt_ip": "10.10.10.2",
                     "neighbor-system-port": "1/1/1"
                 }
             ]
@@ -88,6 +90,7 @@
                         }
                     ],
                     "neighbor-system-name": "cas-sf3-009",
+                    "neighbor-system-mgmt_ip": "10.10.10.3",
                     "neighbor-system-port": "1/1/1"
                 },
                 {
@@ -115,6 +118,7 @@
                         }
                     ],
                     "neighbor-system-name": "cas-sf3-009",
+                    "neighbor-system-mgmt_ip": "10.10.10.4",
                     "neighbor-system-port": "1/1/1"
                 }
             ]

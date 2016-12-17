@@ -1,5 +1,15 @@
 {
+    "datetime": "{{ ansible_date_time.date }}@{{ ansible_date_time.time }}",
+    "compute-hosts": [
+        {
+            "name": "{{ inventory_hostname }}",
+            "interfaces": [
 {% for interface in neighbor_tlv.results %}
-   {{ interface.stdout }},
+
+                {{ interface.stdout }}{% if not loop.last%},{% endif %}
+
 {% endfor %}
+            ]
+        }
+    ]
 }

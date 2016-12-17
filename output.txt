@@ -1,4 +1,0 @@
-{
-   { "Chassis ID TLV": { "MAC": "68:54:ed:03:cb:00" },"Port ID TLV": { "Local": "35946496" },"Time to Live TLV": "121","Port Description TLV": "Port 1/1/9 connection to cas-cs3-022 // eno1","System Name TLV": "cas-sf3-009","Management Address TLV": { "IPv4": "10.101.2.2", "Ifindex": "1", "OID:": "" } },
-   {},
-}

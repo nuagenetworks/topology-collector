@@ -7,27 +7,27 @@
     search_regex: OpenSSH
     delay: 1
 
-- name: Execute interfaces
-  interfaces: state=UP regex=eno
+- name: Get a list of the matching interfaces on {{ inventory_hostname }}
+  interfaces: state=UP regex={{ interface_regex }}
   register: interface_list
 
 - name: Display full output
-  debug: msg="{{ interface_list }}"
+  debug: msg="{{ interface_list }}" verbosity=3
 
 - name: Display interface_list
-  debug: msg="{{ interface_list.matches }}"
+  debug: msg="{{ interface_list.matches }}" verbosity=2
 
 - name: Execute lldp_neighbor_tlv
-  lldp_neighbor_tlv: interface={{ item }}
+  lldp_neighbor_tlv: system_name={{ inventory_hostname}} interface={{ item }}
   with_items: "{{ interface_list.matches }}"
   register: neighbor_tlv
 
 - name: Display neighbor_tlv
-  debug: msg="{{ item }}"
+  debug: msg="{{ item }}" verbosity=2
   with_items: "{{ neighbor_tlv.results }}"
 
 - name: Write out a file of TLVs
-  template: src=output.j2 dest=./output.txt
+  template: src=output.j2 dest={{ output_dir }}/collector.{{ ansible_date_time.date }}@{{ansible_date_time.time}}.json
   with_items: "{{ neighbor_tlv.results }}"
   delegate_to: 127.0.0.1
 

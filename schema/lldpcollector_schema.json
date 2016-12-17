@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "title": "Nuage LLDP Port mapping",
-    "description": "A report of the port mapping between a collection of compute hosts and NSG TOR devices",
+    "description": "A report of the port mapping between a collection of compute hosts and VSG ToR devices",
     "type": "object",
     "properties": {
         "datetime": {
@@ -49,6 +49,10 @@
                 "neighbor-system-name": {
                     "type": "string",
                     "description": "The system name of the connected neighbor"
+                },
+                "neighbor-system-mgmt-ip": {
+                    "type": "string",
+                    "description": "The management IP address of the connected neighbor"
                 },
                 "neighbor-system-port": {
                     "type": "string",
