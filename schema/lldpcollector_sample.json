@@ -34,31 +34,10 @@
                 },
                 {
                     "name": "ens15f1",
-                    "vf-info": [
-                        {
-                            "device-name": "virtfn0",
-                            "pci-id": "0000:03:08.0"
-                        },
-                        {
-                            "device-name": "virtfn1",
-                            "pci-id": "0000:03:08.1"
-                        },
-                        {
-                            "device-name": "virtfn10",
-                            "pci-id": "0000:03:09.2"
-                        },
-                        {
-                            "device-name": "virtfn11",
-                            "pci-id": "0000:03:09.3"
-                        },
-                        {
-                            "device-name": "virtfn2",
-                            "pci-id": "0000:03:08.2"
-                        }
-                    ],
-                    "neighbor-system-name": "cas-sf3-009",
-                    "neighbor-system-mgmt_ip": "10.10.10.2",
-                    "neighbor-system-port": "1/1/1"
+                    "vf-info": [],
+                    "neighbor-system-name": "none",
+                    "neighbor-system-mgmt_ip": "none",
+                    "neighbor-system-port": "none"
                 }
             ]
         },
@@ -67,28 +46,7 @@
             "interfaces": [
                 {
                     "name": "ens15f0",
-                    "vf-info": [
-                        {
-                            "device-name": "virtfn0",
-                            "pci-id": "0000:03:06.0"
-                        },
-                        {
-                            "device-name": "virtfn1",
-                            "pci-id": "0000:03:06.1"
-                        },
-                        {
-                            "device-name": "virtfn10",
-                            "pci-id": "0000:03:07.2"
-                        },
-                        {
-                            "device-name": "virtfn11",
-                            "pci-id": "0000:03:07.3"
-                        },
-                        {
-                            "device-name": "virtfn2",
-                            "pci-id": "0000:03:06.2"
-                        }
-                    ],
+                    "vf-info": [],
                     "neighbor-system-name": "cas-sf3-009",
                     "neighbor-system-mgmt_ip": "10.10.10.3",
                     "neighbor-system-port": "1/1/1"

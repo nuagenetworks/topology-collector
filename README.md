@@ -86,7 +86,7 @@ The name of the file will be of the form `collector.<date-time>.json`. For examp
                     "description": "The port designation on the connected neighbor"
                 }
             },
-            "required": [ "name", "vf-info", "neighbor-system-name", "neighbor-system-port" ]
+            "required": [ "name", "neighbor-system-name", "neighbor-system-port" ]
         },
         "vf-info": {
             "properties": {
@@ -98,8 +98,7 @@ The name of the file will be of the form `collector.<date-time>.json`. For examp
                     "type": "string",
                     "description": "The VF device name"
                 }
-            },
-            "required": [ "pci-id", "device-name" ]
+            }
         }
     }
 }
@@ -144,31 +143,10 @@ The name of the file will be of the form `collector.<date-time>.json`. For examp
                 },
                 {
                     "name": "ens15f1",
-                    "vf-info": [
-                        {
-                            "device-name": "virtfn0",
-                            "pci-id": "0000:03:08.0"
-                        },
-                        {
-                            "device-name": "virtfn1",
-                            "pci-id": "0000:03:08.1"
-                        },
-                        {
-                            "device-name": "virtfn10",
-                            "pci-id": "0000:03:09.2"
-                        },
-                        {
-                            "device-name": "virtfn11",
-                            "pci-id": "0000:03:09.3"
-                        },
-                        {
-                            "device-name": "virtfn2",
-                            "pci-id": "0000:03:08.2"
-                        }
-                    ],
-                    "neighbor-system-name": "cas-sf3-009",
-                    "neighbor-system-mgmt-ip": "10.10.10.2",
-                    "neighbor-system-port": "1/1/1"
+                    "vf-info": [],
+                    "neighbor-system-name": "none",
+                    "neighbor-system-mgmt-ip": "none",
+                    "neighbor-system-port": "none"
                 }
             ]
         },
@@ -177,28 +155,7 @@ The name of the file will be of the form `collector.<date-time>.json`. For examp
             "interfaces": [
                 {
                     "name": "ens15f0",
-                    "vf-info": [
-                        {
-                            "device-name": "virtfn0",
-                            "pci-id": "0000:03:06.0"
-                        },
-                        {
-                            "device-name": "virtfn1",
-                            "pci-id": "0000:03:06.1"
-                        },
-                        {
-                            "device-name": "virtfn10",
-                            "pci-id": "0000:03:07.2"
-                        },
-                        {
-                            "device-name": "virtfn11",
-                            "pci-id": "0000:03:07.3"
-                        },
-                        {
-                            "device-name": "virtfn2",
-                            "pci-id": "0000:03:06.2"
-                        }
-                    ],
+                    "vf-info": [],
                     "neighbor-system-name": "cas-sf3-009",
                     "neighbor-system-mgmt-ip": "10.10.10.3",
                     "neighbor-system-port": "1/1/1"

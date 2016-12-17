@@ -36,9 +36,11 @@ options:
 
 EXAMPLES = '''
 # Verify the state of program "ntpd-status" state.
-- lldpneighbortlv: system_name= 192.168.1.1 interfaace=eth0
+- lldpneighbortlv: system_name=192.168.1.1 interfaace=eth0
+- lldpneighbortlv: system_name=cas-cs2-011 interfaace=eno4
 '''
 
+# TODO: Update this description. Rename the function.
 # convert_lldptool_output_to_json is a function that takes an output string from a
 # specific run of lldptool and converts it to JSON. The specific form of the lldptool
 # command is 'lldptool -t -n -i <interface>'. That is the form used to gather the
@@ -56,17 +58,27 @@ def convert_lldptool_output_to_json(interface, lldpout, lsout):
     NEIGHBORPORT = "neighbor-system-port"
 
     # Insert the interface name into the JSON object.
-    parsed = "\"name\": \"%s\"" % interface
+    parsed = "\n \"name\": \"%s\"" % interface
 
     # Insert VF port info
-    # TODO: Gotta fix this code
-    # vf_info = ", \"vf_info\": ["
-    # for line in lsout.split('n'):
-        # line_split = line.split('/')
-        # if len(line_split) == 8:
-            # vf_info += "{ \"device-name\": \"%s\", \"pci-id\": \"%s\" }," % (
-                # line_split[6].split(' ')[0],
-                # line_split[7])
+    vf_info = ",\n \"vf_info\": ["
+    lines = lsout.split('\n')
+    found_first_match = False
+    for line in lines:
+        if re.search(" virt", line):
+            fmt = ",\n { \"device-name\": \"%s\""
+            vf_parts = line.split(' ')
+            if len(vf_parts) >= 17:
+                if not found_first_match:
+                    found_first_match = True
+                    fmt = "\n { \"device-name\": \"%s\""
+                vf_info += fmt % vf_parts[16]
+            if len(vf_parts) >= 19:
+                pci_id_parts = vf_parts[18].split('/')
+                if len(pci_id_parts) >= 2:
+                    vf_info += ", \"pci-id\": \"%s\" }" % pci_id_parts[1]
+    vf_info += "]"
+    parsed += vf_info
 
     # Now add neighbor information
     scratch = lldpout.replace('\n\t', '\t').strip()
@@ -134,7 +146,6 @@ def main():
                          delta=str(datetime.datetime.now()-startd),
                          changed=False)
 
-    # TODO: There is a problem with this call...
     lscmd = "%s -la /sys/class/net/%s/device/" % (LS, interface)
     lsrc, lsout, lserr = module.run_command(lscmd, check_rc=True)
 

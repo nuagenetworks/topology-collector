@@ -59,7 +59,7 @@
                     "description": "The port designation on the connected neighbor"
                 }
             },
-            "required": [ "name", "vf-info", "neighbor-system-name", "neighbor-system-port" ]
+            "required": [ "name", "neighbor-system-name", "neighbor-system-port" ]
         },
         "vf-info": {
             "properties": {
@@ -71,8 +71,7 @@
                     "type": "string",
                     "description": "The VF device name"
                 }
-            },
-            "required": [ "pci-id", "device-name" ]
+            }
         }
     }
 }
