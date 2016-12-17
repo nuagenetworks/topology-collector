@@ -108,86 +108,71 @@ The name of the file will be of the form `collector.<date-time>.json`. For examp
 
 ```
 {
-    "datetime": "2016-11-21@14:16:18",
+    "datetime": "2016-12-17@04:06:05",
     "compute-hosts": [
         {
-            "name": "cas-cs3-022",
+            "name": "10.31.178.22",
             "interfaces": [
+
                 {
-                    "name": "ens15f0",
-                    "vf-info": [
-                        {
-                            "device-name": "virtfn0",
-                            "pci-id": "0000:03:06.0"
-                        },
-                        {
-                            "device-name": "virtfn1",
-                            "pci-id": "0000:03:06.1"
-                        },
-                        {
-                            "device-name": "virtfn10",
-                            "pci-id": "0000:03:07.2"
-                        },
-                        {
-                            "device-name": "virtfn11",
-                            "pci-id": "0000:03:07.3"
-                        },
-                        {
-                            "device-name": "virtfn2",
-                            "pci-id": "0000:03:06.2"
-                        }
-                    ],
-                    "neighbor-system-name": "cas-sf3-009",
-                    "neighbor-system-mgmt-ip": "10.10.10.1",
-                    "neighbor-system-port": "1/1/1"
-                },
+ "name": "eno1",
+ "vf_info": [],
+ "neighbor-system-name": "cas-sf3-009",
+ "neighbor-system-mgmt-ip": "10.101.2.2",
+ "neighbor-system-port": "1/1/9"  },
+
                 {
-                    "name": "ens15f1",
-                    "vf-info": [],
-                    "neighbor-system-name": "none",
-                    "neighbor-system-mgmt-ip": "none",
-                    "neighbor-system-port": "none"
-                }
-            ]
-        },
-        {
-            "name": "cas-cs3-023",
-            "interfaces": [
+ "name": "eno4",
+ "vf_info": [],
+ "neighbor-system-name": "None",
+ "neighbor-system-mgmt-ip": "None",
+ "neighbor-system-port": "None"  },
+
                 {
-                    "name": "ens15f0",
-                    "vf-info": [],
-                    "neighbor-system-name": "cas-sf3-009",
-                    "neighbor-system-mgmt-ip": "10.10.10.3",
-                    "neighbor-system-port": "1/1/1"
-                },
+ "name": "ens15f0",
+ "vf_info": [],
+ "neighbor-system-name": "cas-sf3-009",
+ "neighbor-system-mgmt-ip": "10.101.2.2",
+ "neighbor-system-port": "1/1/1"  },
+
                 {
-                    "name": "ens15f1",
-                    "vf-info": [
-                        {
-                            "device-name": "virtfn0",
-                            "pci-id": "0000:03:08.0"
-                        },
-                        {
-                            "device-name": "virtfn1",
-                            "pci-id": "0000:03:08.1"
-                        },
-                        {
-                            "device-name": "virtfn10",
-                            "pci-id": "0000:03:09.2"
-                        },
-                        {
-                            "device-name": "virtfn11",
-                            "pci-id": "0000:03:09.3"
-                        },
-                        {
-                            "device-name": "virtfn2",
-                            "pci-id": "0000:03:08.2"
-                        }
-                    ],
-                    "neighbor-system-name": "cas-sf3-009",
-                    "neighbor-system-mgmt-ip": "10.10.10.4",
-                    "neighbor-system-port": "1/1/1"
-                }
+ "name": "ens15f1",
+ "vf_info": [
+ { "device-name": "virtfn0", "pci-id": "0000:03:06.0" },
+ { "device-name": "virtfn1", "pci-id": "0000:03:06.1" },
+ { "device-name": "virtfn10", "pci-id": "0000:03:07.2" },
+ { "device-name": "virtfn11", "pci-id": "0000:03:07.3" },
+ { "device-name": "virtfn12", "pci-id": "0000:03:07.4" },
+ { "device-name": "virtfn13", "pci-id": "0000:03:07.5" },
+ { "device-name": "virtfn14", "pci-id": "0000:03:07.6" },
+ { "device-name": "virtfn15", "pci-id": "0000:03:07.7" },
+ { "device-name": "virtfn16", "pci-id": "0000:03:08.0" },
+ { "device-name": "virtfn17", "pci-id": "0000:03:08.1" },
+ { "device-name": "virtfn18", "pci-id": "0000:03:08.2" },
+ { "device-name": "virtfn19", "pci-id": "0000:03:08.3" },
+ { "device-name": "virtfn2", "pci-id": "0000:03:06.2" },
+ { "device-name": "virtfn20", "pci-id": "0000:03:08.4" },
+ { "device-name": "virtfn21", "pci-id": "0000:03:08.5" },
+ { "device-name": "virtfn22", "pci-id": "0000:03:08.6" },
+ { "device-name": "virtfn23", "pci-id": "0000:03:08.7" },
+ { "device-name": "virtfn24", "pci-id": "0000:03:09.0" },
+ { "device-name": "virtfn25", "pci-id": "0000:03:09.1" },
+ { "device-name": "virtfn26", "pci-id": "0000:03:09.2" },
+ { "device-name": "virtfn27", "pci-id": "0000:03:09.3" },
+ { "device-name": "virtfn28", "pci-id": "0000:03:09.4" },
+ { "device-name": "virtfn29", "pci-id": "0000:03:09.5" },
+ { "device-name": "virtfn3", "pci-id": "0000:03:06.3" },
+ { "device-name": "virtfn30", "pci-id": "0000:03:09.6" },
+ { "device-name": "virtfn31", "pci-id": "0000:03:09.7" },
+ { "device-name": "virtfn4", "pci-id": "0000:03:06.4" },
+ { "device-name": "virtfn5", "pci-id": "0000:03:06.5" },
+ { "device-name": "virtfn6", "pci-id": "0000:03:06.6" },
+ { "device-name": "virtfn7", "pci-id": "0000:03:06.7" },
+ { "device-name": "virtfn8", "pci-id": "0000:03:07.0" },
+ { "device-name": "virtfn9", "pci-id": "0000:03:07.1" }],
+ "neighbor-system-name": "cas-sf3-009",
+ "neighbor-system-mgmt-ip": "10.101.2.2",
+ "neighbor-system-port": "1/2/1"  }
             ]
         }
     ]
