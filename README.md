@@ -1,6 +1,11 @@
 # lldpcollector
 
-A repository for code to collect LLDP neighbor TLVs from 1 or more nodes and produce a JSON report.
+A repository for code that collects the following information about interfaces:
+
+1. Neighbor LLDP information
+2. Virtual port PCI information
+
+The output of the code is a JSON report.
 
 ## Prerequisites
 1. Ansible 2.1+ installed on node where the playbook will run
@@ -9,7 +14,7 @@ A repository for code to collect LLDP neighbor TLVs from 1 or more nodes and pro
 
 ## Input variables
 
-1. List of compute host names or IP addresses
+1. List of compute host names or IP addresses (Stretch goal: Obtain compute information from OS Nova.)
 2. Path to directory to write report to
 
 ## Invocation
