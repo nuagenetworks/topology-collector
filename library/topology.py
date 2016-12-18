@@ -21,8 +21,8 @@ from ansible.module_utils.six import b
 
 DOCUMENTATION = '''
 ---
-module: lldp_neighbor_tlv
-short_description: Given an interface, returns a JSON representation of the neighbor's LLDP TLV
+module: topology
+short_description: Given an interface, returns a JSON string with VSG ToR port mapping and VF PCI info
 options:
   system_name:
     description:
@@ -35,20 +35,19 @@ options:
 '''
 
 EXAMPLES = '''
-# Verify the state of program "ntpd-status" state.
-- lldpneighbortlv: system_name=192.168.1.1 interfaace=eth0
-- lldpneighbortlv: system_name=cas-cs2-011 interfaace=eno4
+- topoloy: system_name=192.168.1.1 interfaace=eth0
+- topoloy: system_name=cas-cs2-011 interfaace=eno4
 '''
 
-# TODO: Update this description. Rename the function.
-# convert_lldptool_output_to_json is a function that takes an output string from a
-# specific run of lldptool and converts it to JSON. The specific form of the lldptool
-# command is 'lldptool -t -n -i <interface>'. That is the form used to gather the
-# interface's neighbor TLV. The code, below, is tied very tightly to the exact
-# format of the command output. If that output changes, this function must change.
+# generate_json() is a function that takes two input strings of specific syntax and
+# creates a JSON string from specific portions of those outputs. The input strings
+# are generated from two specific commands. As such, this function is tightly comupled
+# to the outputs of those commands. The first command is lldptool. The second is ls.
+# The exact syntax of these commands is shown in the main() function in this file.
+# If the outputs or commands change, the code in this function must change with them.
 
 
-def convert_lldptool_output_to_json(interface, lldpout, lsout):
+def generate_json(interface, lldpout, lsout):
 
     LLDPSYSTEMNAME = "System Name TLV"
     NEIGHBORNAME = "neighbor-system-name"
@@ -174,7 +173,7 @@ def main():
                      lscmd=lscmd,
                      system_name=system_name,
                      interface=interface,
-                     stdout=convert_lldptool_output_to_json(interface, lldpout, lsout),
+                     stdout=generate_json(interface, lldpout, lsout),
                      stderr=lldperr,
                      lldpout=lldpout,
                      lldperr=lldperr,

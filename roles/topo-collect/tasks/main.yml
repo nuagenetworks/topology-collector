@@ -18,7 +18,7 @@
   debug: msg="{{ interface_list.matches }}" verbosity=2
 
 - name: Execute lldp_neighbor_tlv
-  lldp_neighbor_tlv: system_name={{ inventory_hostname}} interface={{ item }}
+  topology: system_name={{ inventory_hostname}} interface={{ item }}
   with_items: "{{ interface_list.matches }}"
   register: neighbor_tlv
 

@@ -1,9 +1,9 @@
-# lldpcollector
+# topology-collector
 
-A repository for code that collects the following information about interfaces:
+A repository for code that collects the following information about interfaces on compute hosts:
 
-1. Neighbor LLDP information
-2. Virtual port PCI information
+1. Neighbor LLDP connectivity information
+2. Virtual port PCI information for the interface
 
 The output of the code is a JSON report.
 
@@ -19,7 +19,7 @@ The output of the code is a JSON report.
 
 ## Invocation
 
-`ansible-playbook -i hosts collect.yml`
+`ansible-playbook -i hosts topo-collect.yml`
 
 ## Output
 
@@ -32,8 +32,8 @@ The name of the file will be of the form `collector.<date-time>.json`. For examp
 ```
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "Nuage LLDP Port mapping",
-    "description": "A report of the port mapping between a collection of compute hosts and VSG ToR devices",
+    "title": "Nuage Topology Collector Report",
+    "description": "A report of 1) the mapping between compute host interfaces and VSG ToR ports and 2) the VF PCI information for the interfaces",
     "type": "object",
     "properties": {
         "datetime": {
