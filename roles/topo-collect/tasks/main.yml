@@ -26,8 +26,13 @@
   debug: msg="{{ item }}" verbosity=2
   with_items: "{{ neighbor_tlv.results }}"
 
+- name: Create output file name
+  set_fact: report_outfile={{ output_dir }}/collector.{{ ansible_date_time.date }}@{{ansible_date_time.time}}.json
+
 - name: Write out a file of TLVs
-  template: src=output.j2 dest={{ output_dir }}/collector.{{ ansible_date_time.date }}@{{ansible_date_time.time}}.json
+  template: src=output.j2 dest={{ report_outfile }}
   with_items: "{{ neighbor_tlv.results }}"
   delegate_to: 127.0.0.1
 
+- name: Print out the contents of the file
+  debug: msg="{{ lookup('file', '{{ report_outfile }}') }}"
