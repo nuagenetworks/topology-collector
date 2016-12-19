@@ -14,22 +14,46 @@ The output of the code is a JSON report.
 
 ## Assumptions
 1. The interfaces you care about are currently `UP` as reported by the command `ip addr`
-2. The VFs for the interfaces you care about are listed in the directory /sys/class/net/<interface>/device/
+2. The VFs for the interfaces you care about are listed in the directory /sys/class/net/<interface>/device/ on the compute node
 
 ## Input variables
 
-1. List of compute host names or IP addresses (Stretch goal: Obtain compute information from OS Nova.)
-2. Path to directory to write report to
+Input variables are contained in the following files:
+1. `user_vars.yml`
+2. `hosts`
+
+`user_vars.yml` contains:
+- `temp_dir`, the location where intermediate files are written to and read from
+- `output_dir`, the location where the date-stamped output files will be written
+- `output_file_prefix`, text to prepend to the output file name, e.g. <output_file_prefix>.<date>@<time>.json.
+- `interface_regex`, regex to match interface names. Default is `['*']`
+
+`hosts` contains a flat list of compute node host names or IP addresses under the tag `[computes]`. *We hope to automate gathering these names in the near future.*
 
 ## Invocation
 
-`ansible-playbook -i hosts topo-collect.yml`
+`ansible-playbook -i hosts collect_topo.yml`
+
+## Decomposition
+
+The `collect_topo.yml` playbook is nothing more that a set of includes of other playbooks. These component playbooks may be executed individually. The other playbooks, each representing an Ansible role, are:
+
+- `clean_tmp.yml`, when executed, this playbook destroys the `temp_dir` on disk. This is done to prevcent old files from polluting a current run.
+- `topology.yml`, when executed, queries each hosts listed in the `hosts` file's `computes` group. The output of this stage is a set of files, one per compute node, in the `temp_dir`.
+- `report.yml`, when executed, pulls in the content of each JSON file found in `temp_dir` and creates a full report for all compute nodes. The full report is written to `output_dir` using a unique file name.
+
+## Custom Ansible Modules
+
+The implementation includes the following custom Ansible modules written in Python:
+
+- `library\interfaces.py', a module to query each compute node for information about its interfaces. Matching interfaces are filtered using `state` and regex match on name.
+- `library\topology.py`, a module that executes the commands for collecting infomration about each interface, converting the output to JSON.
 
 ## Output
 
 The output of the run will be a file that contains a JSON string. The schema itself and a sample output can be found in the `schema` subdirectory and pasted, below.
 
-The name of the file will be of the form `collector.<date-time>.json`. For example, `collector.2016-11-21@14:16:18.json`.
+The name of the file will be of the form `<output_file_prefix>.<date>@<time>.json`. For example, `blue.2016-11-21@14:16:18.json`.
 
 ### JSON schema
 
