@@ -98,9 +98,11 @@ def generate_json(interface, lldpout, lsout):
         elif re.search( LLDPSYSTEMPORT, line):
             port_desc_tlv_parts = line.split('\t')
             if len(port_desc_tlv_parts) >= 2:
-                port_desc_parts = port_desc_tlv_parts[1].split(' ')
+                port_desc_parts = port_desc_tlv_parts[1].split('connection')
                 if len(port_desc_parts) >= 2:
-                    neighborport = port_desc_parts[1]
+                    neighbor_port_parts = port_desc_parts[0].split(' ')
+                    if len(neighbor_port_parts) >= 2:
+                        neighborport = neighbor_port_parts[1]
     parsed += ",\n \"%s\": \"%s\"" % ( NEIGHBORNAME, neighborname)
     parsed += ",\n \"%s\": \"%s\"" % ( NEIGHBORIP, neighborip)
     parsed += ",\n \"%s\": \"%s\" " % ( NEIGHBORPORT, neighborport)
