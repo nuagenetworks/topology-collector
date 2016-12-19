@@ -66,14 +66,14 @@ def generate_json(interface, lldpout, lsout):
     for line in lines:
         if re.search(" virt", line):
             fmt = ",\n { \"device-name\": \"%s\""
-            vf_parts = line.split(' ')
-            if len(vf_parts) >= 17:
+            vf_parts = line.split()
+            if len(vf_parts) >= 9:
                 if not found_first_match:
                     found_first_match = True
                     fmt = "\n { \"device-name\": \"%s\""
-                vf_info += fmt % vf_parts[16]
-            if len(vf_parts) >= 19:
-                pci_id_parts = vf_parts[18].split('/')
+                vf_info += fmt % vf_parts[8]
+            if len(vf_parts) >= 11:
+                pci_id_parts = vf_parts[10].split('/')
                 if len(pci_id_parts) >= 2:
                     vf_info += ", \"pci-id\": \"%s\" }" % pci_id_parts[1]
     vf_info += "]"
