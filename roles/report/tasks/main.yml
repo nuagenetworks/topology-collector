@@ -1,0 +1,43 @@
+---
+- name: Check the status of {{ temp_dir }}
+  stat:
+    path: "{{ temp_dir }}"
+  register: tmp
+
+- name: Verify that {{ temp_dir }} is a directory
+  fail: msg="{{ temp_dir }} is not a directory"
+  when: not tmp.stat.isdir
+
+- name: Get a list of the files in {{ temp_dir }}
+  find:
+    paths: "{{ temp_dir }}"
+    patterns: "*.json"
+  register: file_list
+
+- name: Verify that there is at least one json file to process
+  fail: msg="No json files found in {{ temp_dir }}"
+  when: file_list.matched == 0
+
+- name: List of files to process
+  debug: msg={{ item.path }} verbosity=1
+  with_items: "{{ file_list.files }}"
+
+- name: Cat all files in {{ temp_dir }}
+  command: cat {{ item.path }}
+  with_items: "{{ file_list.files }}"
+  register: content_list
+
+- name: Print content_list
+  debug: msg={{ item.stdout }} verbosity=1
+  with_items: "{{ content_list.results }}"
+
+- name: Create output file name
+  set_fact: report_outfile={{ output_dir }}/{{ output_file_prefix }}.{{ ansible_date_time.date }}@{{ansible_date_time.time}}.json
+
+- name: Write out report
+  template:
+    src: output.j2
+    dest: "{{ report_outfile }}"
+
+- name: Print out the contents of the file
+  debug: msg="{{ lookup('file', '{{ report_outfile }}') }}" verbosity=1

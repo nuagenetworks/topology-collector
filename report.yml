@@ -1,0 +1,5 @@
+---
+- hosts: localhost
+  vars_files: ["user_vars.yml"]
+  roles:
+    - report

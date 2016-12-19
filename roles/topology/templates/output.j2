@@ -1,0 +1,10 @@
+{
+    "name": "{{ inventory_hostname }}",
+    "interfaces": [
+{% for interface in interface_json.results %}
+
+        {{ interface.stdout }}{% if not loop.last%},{% endif %}
+
+{% endfor %}
+     ]
+}

@@ -21,59 +21,24 @@ from ansible.module_utils.six import b
 
 DOCUMENTATION = '''
 ---
-module: lldp_neighbor_tlv
-short_description: Given an interface, returns a JSON representation of the neighbor's LLDP TLV
+module: interface
+short_description: Given a required state and a regex to match the name, return a list of matching intefaces
 options:
-  interface:
+  state:
     description:
-      - The network interface to interrogate
+      - The required state of the interface. See putput of 'ip addr' command.
     required: true
-    default: null
+  regex:
+    description:
+      - A regex to match interface names, e.g. 'en' will match all interface names that contain that string
+    required: false
+    default: ['*']
 '''
 
 EXAMPLES = '''
-# Verify the state of program "ntpd-status" state.
-- lldpneighbortlv: interfaace=eth0
+# Get a list of interfaces that are UP and contain 'en' in their names
+- topology: state=UP regex=en
 '''
-
-# convert_lldptool_output_to_json is a function that takes an output string from a
-# specific run of lldptool and converts it to JSON. The specific form of the lldptool
-# command is 'lldptool -t -n -i <interface>'. That is the form used to gather the
-# interrface's neighbor TLV. The code, below, is tied very tightly to the exact
-# format of the command output. If that output changes, this function must change.
-
-
-def convert_lldptool_output_to_json(lldptool_out):
-    if lldptool_out is None:
-        return "{}"
-    scratch = lldptool_out.replace('End of LLDPDU TLV', '').replace('\n\t', '\t').strip()
-    parsed = ""
-    for line in scratch.split('\n'):
-        first_split_list = line.split('\t')
-        if len(first_split_list) == 2:
-            second_split_list = first_split_list[1].split(': ')
-            if 2 == len(second_split_list):
-                parsed += "\"%s\": { \"%s\": \"%s\" }," % (
-                    first_split_list[0],
-                    second_split_list[0],
-                    second_split_list[1])
-            else:
-                parsed += "\"%s\": \"%s\"," % (
-                    first_split_list[0],
-                    first_split_list[1])
-        else:
-            sub = ""
-            if 2 == len(first_split_list[3].split(': ')):
-                sub = first_split_list[3].split(': ')[1]
-            parsed += "\"%s\": { \"%s\": \"%s\", \"%s\": \"%s\", \"%s\": \"%s\" }" % (
-                first_split_list[0],
-                first_split_list[1].split(': ')[0],
-                first_split_list[1].split(': ')[1],
-                first_split_list[2].split(': ')[0],
-                first_split_list[2].split(': ')[1],
-                first_split_list[3].split(': ')[0],
-                sub)
-    return "{ %s }" % parsed
 
 
 def main():

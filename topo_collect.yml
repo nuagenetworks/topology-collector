@@ -1,8 +1,0 @@
----
-- hosts: computes
-  remote_user: root
-  vars:
-    output_dir: /home/caso/reports/
-    interface_regex: en
-  roles:
-    - topo-collect

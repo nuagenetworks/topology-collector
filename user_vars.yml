@@ -1,0 +1,5 @@
+---
+  temp_dir: /home/caso/reports/tmp/
+  output_dir: /home/caso/reports/
+  output_file_prefix: topo_report
+  interface_regex: en

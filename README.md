@@ -12,6 +12,10 @@ The output of the code is a JSON report.
 2. Network connectivity from the Ansible host to each compute node
 3. Passwordless ssh configured from the Ansible host to each compute node
 
+## Assumptions
+1. The interfaces you care about are currently `UP` as reported by the command `ip addr`
+2. The VFs for the interfaces you care about are listed in the directory /sys/class/net/<interface>/device/
+
 ## Input variables
 
 1. List of compute host names or IP addresses (Stretch goal: Obtain compute information from OS Nova.)

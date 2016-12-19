@@ -1,0 +1,10 @@
+{
+    "datetime": "{{ ansible_date_time.date }}@{{ ansible_date_time.time }}",
+    "compute-hosts": [
+{% for compute_node in content_list.results %}
+
+                {{ compute_node.stdout }}{% if not loop.last%},{% endif %}
+
+{% endfor %}
+    ]
+}
