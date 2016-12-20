@@ -22,7 +22,7 @@ from ansible.module_utils.six import b
 DOCUMENTATION = '''
 ---
 module: topology
-short_description: Given an interface, returns a JSON string with VSG ToR port mapping and VF PCI info
+short_description: Given an interface, returns VSG ToR port and VF PCI info in JSON
 options:
   system_name:
     description:
@@ -39,6 +39,18 @@ EXAMPLES = '''
 - topoloy: system_name=cas-cs2-011 interfaace=eno4
 '''
 
+# convert_ifindex_to_ifname() is a function that converts the ifindex we get from
+# the Port ID TLV output of lldptool into the ifname of the form x/y/z.
+# ifindex is a string that represents an integer, e.g. "37781504".
+
+
+def convert_ifindex_to_ifname(ifindex):
+    return "%s/%s/%s" % (
+        (int(ifindex) >> 25),
+        (int(ifindex) >> 21) & 0xf,
+        (int(ifindex) >> 15) & 0x3f)
+
+
 # generate_json() is a function that takes two input strings of specific syntax and
 # creates a JSON string from specific portions of those outputs. The input strings
 # are generated from two specific commands. As such, this function is tightly comupled
@@ -53,7 +65,7 @@ def generate_json(interface, lldpout, lsout):
     NEIGHBORNAME = "neighbor-system-name"
     LLDPSYSTEMIP = "Management Address TLV"
     NEIGHBORIP = "neighbor-system-mgmt-ip"
-    LLDPSYSTEMPORT = "Port Description TLV"
+    LLDPSYSTEMPORT = "Port ID TLV"
     NEIGHBORPORT = "neighbor-system-port"
 
     # Insert the interface name into the JSON object.
@@ -85,27 +97,25 @@ def generate_json(interface, lldpout, lsout):
     neighborip = "None"
     neighborport = "None"
     for line in scratch.split('\n'):
-        if re.search( LLDPSYSTEMNAME, line):
+        if re.search(LLDPSYSTEMNAME, line):
             sys_name_tlv_parts = line.split('\t')
             if len(sys_name_tlv_parts) >= 2:
                 neighborname = sys_name_tlv_parts[1]
-        elif re.search( LLDPSYSTEMIP, line):
+        elif re.search(LLDPSYSTEMIP, line):
             mgmt_addr_tlv_parts = line.split('\t')
             if len(mgmt_addr_tlv_parts) >= 2:
-                mgmt_addr_parts = mgmt_addr_tlv_parts[1].split(' ')
+                mgmt_addr_parts = mgmt_addr_tlv_parts[1].split()
                 if len(mgmt_addr_parts) >= 2:
                     neighborip = mgmt_addr_parts[1]
-        elif re.search( LLDPSYSTEMPORT, line):
-            port_desc_tlv_parts = line.split('\t')
-            if len(port_desc_tlv_parts) >= 2:
-                port_desc_parts = port_desc_tlv_parts[1].split('connection')
-                if len(port_desc_parts) >= 2:
-                    neighbor_port_parts = port_desc_parts[0].split(' ')
-                    if len(neighbor_port_parts) >= 2:
-                        neighborport = neighbor_port_parts[1]
-    parsed += ",\n \"%s\": \"%s\"" % ( NEIGHBORNAME, neighborname)
-    parsed += ",\n \"%s\": \"%s\"" % ( NEIGHBORIP, neighborip)
-    parsed += ",\n \"%s\": \"%s\" " % ( NEIGHBORPORT, neighborport)
+        elif re.search(LLDPSYSTEMPORT, line):
+            port_id_tlv_parts = line.split('\t')
+            if len(port_id_tlv_parts) >= 2:
+                port_id_parts = port_id_tlv_parts[1].split()
+                if len(port_id_parts) >= 2 and port_id_parts[1].isdigit():
+                    neighborport = convert_ifindex_to_ifname(port_id_parts[1])
+    parsed += ",\n \"%s\": \"%s\"" % (NEIGHBORNAME, neighborname)
+    parsed += ",\n \"%s\": \"%s\"" % (NEIGHBORIP, neighborip)
+    parsed += ",\n \"%s\": \"%s\" " % (NEIGHBORPORT, neighborport)
     return "{ %s }" % parsed
 
 

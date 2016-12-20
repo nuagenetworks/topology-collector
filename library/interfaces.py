@@ -22,7 +22,7 @@ from ansible.module_utils.six import b
 DOCUMENTATION = '''
 ---
 module: interface
-short_description: Given a required state and a regex to match the name, return a list of matching intefaces
+short_description: Given a state and a regex for the name, return a list of matching interfaces
 options:
   state:
     description:
@@ -30,7 +30,7 @@ options:
     required: true
   regex:
     description:
-      - A regex to match interface names, e.g. 'en' will match all interface names that contain that string
+      - A regex to match interface names, e.g. 'en' will match interface names that contain 'en'
     required: false
     default: ['*']
 '''
@@ -83,9 +83,9 @@ def main():
 
     parsed = []
     match = "state %s" % state
-    for line in  out.split('\n'):
+    for line in out.split('\n'):
         if match in line:
-            if re.search( regex, line.split(': ')[1] ):
+            if re.search(regex, line.split(': ')[1]):
                 parsed.append(line.split(': ')[1])
 
     module.exit_json(cmd=cmd,
