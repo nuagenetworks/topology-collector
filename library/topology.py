@@ -42,9 +42,12 @@ EXAMPLES = '''
 # convert_ifindex_to_ifname() is a function that converts the ifindex we get from
 # the Port ID TLV output of lldptool into the ifname of the form x/y/z.
 # ifindex is a string that represents an integer, e.g. "37781504".
+# If ifindex does not represent an int we return "None".
 
 
 def convert_ifindex_to_ifname(ifindex):
+    if not ifindex.isdigit():
+        return "None"
     return "%s/%s/%s" % (
         (int(ifindex) >> 25),
         (int(ifindex) >> 21) & 0xf,
