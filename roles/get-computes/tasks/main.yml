@@ -1,0 +1,22 @@
+---
+- name: Run nova command on {{ inventory_hostname }}
+  shell: nova hypervisor-list
+  environment:
+    OS_NO_CACHE: True
+    COMPUTE_API_VERSION: 1.1
+    OS_USERNAME: admin
+    no_proxy: ",10.0.0.4"
+    OS_TENANT_NAME: admin
+    OS_CLOUDNAME: overcloud
+    OS_AUTH_URL: http://10.0.0.4:5000/v2.0
+    NOVA_VERSION: 1.1
+    OS_PASSWORD: admin
+  register: hlist
+  remote_user: root
+
+- name: Print hypervisor list
+  debug: msg="{{ hlist }}" verbosity=1
+
+- name: Write to compute_hosts file
+  template: src=compute_hosts.j2 dest=./compute_hosts
+  delegate_to: localhost

@@ -1,0 +1,12 @@
+[computes]
+overcloud-compute-3.localdomain
+overcloud-compute-1.localdomain
+overcloud-compute-5.localdomain
+overcloud-compute-6.localdomain
+overcloud-compute-8.localdomain
+overcloud-compute-4.localdomain
+overcloud-compute-9.localdomain
+overcloud-compute-7.localdomain
+overcloud-compute-0.localdomain
+overcloud-compute-2.localdomain
+overcloud-compute-10.localdomain

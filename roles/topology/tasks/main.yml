@@ -17,13 +17,16 @@
   interfaces: state=UP regex={{ interface_regex }}
   register: interface_list
 
-- name: Display interface_list
+- name: Display interface list
   debug: msg="{{ interface_list.matches }}" verbosity=1
 
 - name: Execute topology collector on {{ inventory_hostname }}
   topology: system_name={{ inventory_hostname}} interface={{ item }}
   with_items: "{{ interface_list.matches }}"
   register: interface_json
+
+- name: Display interface json
+  debug: msg="{{ interface_json }}" verbosity=1
 
 - name: Create output file name
   set_fact: json_outfile={{ temp_dir }}/{{ inventory_hostname }}.json

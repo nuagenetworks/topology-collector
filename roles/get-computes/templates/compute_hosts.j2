@@ -1,0 +1,8 @@
+[computes]
+{% for line in hlist.stdout_lines %}
+{% if 'enabled' in line %}
+{% if line.split()|length >= 4 %}
+{{ line.split()[3] }}
+{% endif %}
+{% endif %}
+{% endfor %}
