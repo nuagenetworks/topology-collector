@@ -62,7 +62,7 @@ The `collect_topo.yml` playbook is nothing more that a set of includes of other 
 
 The implementation includes the following custom Ansible modules written in Python:
 
-- `library\interfaces.py', a module to query each compute node for information about its interfaces. Matching interfaces are filtered using `state` and regex match on name.
+- `library\interfaces.py`, a module to query each compute node for information about its interfaces. Matching interfaces are filtered using `state` and regex match on name.
 - `library\topology.py`, a module that executes the commands for collecting infomration about each interface, converting the output to JSON.
 
 ### Output
