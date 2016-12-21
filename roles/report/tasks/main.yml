@@ -31,6 +31,11 @@
   debug: msg={{ item.stdout }} verbosity=1
   with_items: "{{ content_list.results }}"
 
+- name: Make sure the ouput report directory exists
+  file:
+    state: directory
+    path: "{{ output_dir }}"
+
 - name: Create output file name
   set_fact: report_outfile={{ output_dir }}/{{ output_file_prefix }}.{{ ansible_date_time.date }}@{{ansible_date_time.time}}.json
 

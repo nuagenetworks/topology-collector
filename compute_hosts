@@ -1,3 +1,7 @@
+#
+# WARNING: The contents of this file will be overwritten by the
+# get-hosts role.
+#
 [computes]
 overcloud-compute-3.localdomain
 overcloud-compute-1.localdomain
