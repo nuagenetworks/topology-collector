@@ -3,38 +3,54 @@
 A repository for code that collects the following information about interfaces on compute hosts:
 
 1. Neighbor LLDP connectivity information
-2. Virtual port PCI information for the interface
+2. VF port PCI information for the interface
 
 The output of the code is a JSON report.
 
-## Prerequisites
-1. Ansible 2.1+ installed on node where the playbook will run
-2. Network connectivity from the Ansible host to each compute node
-3. Passwordless ssh configured from the Ansible host to each compute node
+## Summary instructions
 
-## Assumptions
-1. The interfaces you care about are currently `UP` as reported by the command `ip addr`
-2. The VFs for the interfaces you care about are listed in the directory /sys/class/net/<interface>/device/ on the compute node
+1. Clone the repo to the OpenStack controller node (requires git)
+2. Install Ansible 2.1+ on the OpenStack Controller node
+3. Configure passwordless ssh from the OpenStack Conroller node to all compute nodes
+4. Update local variables (see below)
+5. Execute `ansible-playbook -i controller_hosts get_computes.yml` (Skip if you hand-edit `compute_hosts` or you have already run this step previously and no changes in the list of compute nodes are required.)
+6. Execute `ansible-playbook -i compute_hosts topo_collect.yml`
 
-## Input variables
+## Details
+
+### Assumptions
+1. The interfaces to be processed on the compute nodes are currently `UP` as reported by the command `ip addr`
+2. The VFs for the interfaces to be processed on the compute nodes are listed in the directory /sys/class/net/<interface>/device/virt* on each compute node
+
+### Input variables
 
 Input variables are contained in the following files:
 1. `user_vars.yml`
-2. `hosts`
+2. `controller_hosts`
+3. `compute_hosts`
 
-`user_vars.yml` contains:
-- `temp_dir`, the location where intermediate files are written to and read from
-- `output_dir`, the location where the date-stamped output files will be written
+#### `user_vars.yml`
+
+- `temp_dir`, the location on the OpenStack controller node where intermediate files are written to and read from
+- `output_dir`, the location on the OpenStack controller node where the date-stamped output files will be written
 - `output_file_prefix`, text to prepend to the output file name, e.g. <output_file_prefix>.<date>@<time>.json.
-- `interface_regex`, regex to match interface names. Default is `['*']`
+- `interface_regex`, regex to match interface names on the compute nodes. Default is `['*']`
 
-`hosts` contains a flat list of compute node host names or IP addresses under the tag `[computes]`. *We hope to automate gathering these names in the near future.*
+#### `controller_hosts`
 
-## Invocation
+Contains a flat list of controller node host names or IP addresses under the tag `[controllers]`. In most cases, this will be a list of one and only one controller.
 
-`ansible-playbook -i hosts collect_topo.yml`
+#### `compute_hosts`
 
-## Decomposition
+Contains a flat list of compute node host names or IP addresses under the tag `[computes]`. This list may be populated manually or automatically. Automatic population is achieved using the get-computes role.
+
+### `get-computes`
+
+The `get-computes` role queries the OpenStack controller node for the list of nova hypervisors. It parses the output and writes the result to `./compute_hosts`.
+
+The `get-computes` role is 
+
+### `collect_topo.yml`
 
 The `collect_topo.yml` playbook is nothing more that a set of includes of other playbooks. These component playbooks may be executed individually. The other playbooks, each representing an Ansible role, are:
 
@@ -42,20 +58,20 @@ The `collect_topo.yml` playbook is nothing more that a set of includes of other 
 - `topology.yml`, when executed, queries each hosts listed in the `hosts` file's `computes` group. The output of this stage is a set of files, one per compute node, in the `temp_dir`.
 - `report.yml`, when executed, pulls in the content of each JSON file found in `temp_dir` and creates a full report for all compute nodes. The full report is written to `output_dir` using a unique file name.
 
-## Custom Ansible Modules
+### Custom Ansible Modules
 
 The implementation includes the following custom Ansible modules written in Python:
 
 - `library\interfaces.py', a module to query each compute node for information about its interfaces. Matching interfaces are filtered using `state` and regex match on name.
 - `library\topology.py`, a module that executes the commands for collecting infomration about each interface, converting the output to JSON.
 
-## Output
+### Output
 
 The output of the run will be a file that contains a JSON string. The schema itself and a sample output can be found in the `schema` subdirectory and pasted, below.
 
 The name of the file will be of the form `<output_file_prefix>.<date>@<time>.json`. For example, `blue.2016-11-21@14:16:18.json`.
 
-### JSON schema
+#### JSON schema
 
 ```
 {
@@ -137,7 +153,7 @@ The name of the file will be of the form `<output_file_prefix>.<date>@<time>.jso
 }
 ```
 
-### JSON sample
+#### JSON sample
 
 ```
 {
