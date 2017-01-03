@@ -18,7 +18,7 @@
   fail: msg="No json files found in {{ temp_dir }}"
   when: file_list.matched == 0
 
-- name: List of files to process
+- name: Print the list of temp files to process when verbosity >= 1, skip otherwise
   debug: msg={{ item.path }} verbosity=1
   with_items: "{{ file_list.files }}"
 
@@ -27,7 +27,7 @@
   with_items: "{{ file_list.files }}"
   register: content_list
 
-- name: Print content_list
+- name: Print the concatenated contents of all files when verbosity >= 1, skip otherwise
   debug: msg={{ item.stdout }} verbosity=1
   with_items: "{{ content_list.results }}"
 
@@ -44,5 +44,5 @@
     src: output.j2
     dest: "{{ report_outfile }}"
 
-- name: Print out the contents of the file
+- name: Print out the contents of the report when verbosity >= 1, skip otherwise
   debug: msg="{{ lookup('file', '{{ report_outfile }}') }}" verbosity=1

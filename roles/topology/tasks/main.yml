@@ -5,7 +5,7 @@
     state: directory
   delegate_to: localhost
 
-- name: Wait for {{ inventory_hostname }} ssh to be ready
+- name: Wait for ssh to be ready
   local_action:
     module: wait_for
     port: "22"
@@ -13,19 +13,19 @@
     search_regex: OpenSSH
     delay: 1
 
-- name: Get a list of the matching interfaces on {{ inventory_hostname }}
+- name: Get a list of the matching interfaces for '{{ interface_regex }}'
   interfaces: state=UP regex={{ interface_regex }}
   register: interface_list
 
-- name: Display interface list
+- name: Display interface list when verbosity >= 1, skip otherwise
   debug: msg="{{ interface_list.matches }}" verbosity=1
 
-- name: Execute topology collector on {{ inventory_hostname }}
+- name: Execute topology collector
   topology: system_name={{ inventory_hostname}} interface={{ item }}
   with_items: "{{ interface_list.matches }}"
   register: interface_json
 
-- name: Display interface json
+- name: Display interface json when verbosity >= 1, skip otherwise
   debug: msg="{{ interface_json }}" verbosity=1
 
 - name: Create output file name
@@ -35,5 +35,5 @@
   template: src=output.j2 dest={{ json_outfile }}
   delegate_to: 127.0.0.1
 
-- name: Print out the contents of the file {{ json_outfile }}
+- name: Print out the contents of the file {{ json_outfile }} when verbosity >= 1, skip otherwise
   debug: msg="{{ lookup('file', '{{ json_outfile }}') }}" verbosity=1

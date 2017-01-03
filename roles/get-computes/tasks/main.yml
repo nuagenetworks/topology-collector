@@ -5,7 +5,7 @@
   register: hlist
   remote_user: root
 
-- name: Print hypervisor list
+- name: Print hypervisor list when verbosity >= 1, otherwise skip
   debug: msg="{{ hlist }}" verbosity=1
 
 - name: Write to compute_hosts file

@@ -14,7 +14,7 @@ The output of the code is a JSON report.
 3. Configure passwordless ssh from the OpenStack Conroller node to all compute nodes
 4. Update local variables (see below)
 5. Execute `ansible-playbook -i controller_hosts get_computes.yml` (Skip if you hand-edit `compute_hosts` or you have already run this step previously and no changes in the list of compute nodes are required.)
-6. Execute `ansible-playbook -i compute_hosts topo_collect.yml`
+6. Execute `ansible-playbook -i compute_hosts get_topo.yml`
 
 ## Details
 
