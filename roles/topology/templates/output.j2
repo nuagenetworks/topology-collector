@@ -1,5 +1,6 @@
 {
-    "name": "{{ inventory_hostname }}",
+    "hypervisor hostname": "{{ inventory_hostname }}",
+    "service_host name": "{{ service_host|default("") }}",
     "interfaces": [
 {% for interface in interface_json.results %}
 

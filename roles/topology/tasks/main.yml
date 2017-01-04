@@ -25,7 +25,7 @@
   with_items: "{{ interface_list.matches }}"
   register: interface_json
 
-- name: Display interface json when verbosity >= 1, skip otherwise
+- name: Display topology json when verbosity >= 1, skip otherwise
   debug: msg="{{ interface_json }}" verbosity=1
 
 - name: Create output file name

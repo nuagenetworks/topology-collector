@@ -95,9 +95,13 @@ The name of the file will be of the form `<output_file_prefix>.<date>@<time>.jso
     "definitions": {
         "compute-host": {
             "properties": {
-                "name": {
+                "hypervisor hostname": {
                     "type": "string",
-                    "description": "System name of the compute host"
+                    "description": "Hypervisor hostname of the compute host"
+                },
+                "service_host name": {
+                    "type": "string",
+                    "description": "service_host name of the compute host"
                 },
                 "interfaces": {
                     "type": "array",
@@ -107,7 +111,7 @@ The name of the file will be of the form `<output_file_prefix>.<date>@<time>.jso
                     }
                 }
             },
-            "required": [ "name", "interfaces" ]
+            "required": [ "hypervisor hostname", "service_host name",  "interfaces" ]
         },
         "interface": {
             "properties": {
@@ -160,7 +164,8 @@ The name of the file will be of the form `<output_file_prefix>.<date>@<time>.jso
     "datetime": "2016-12-17@04:06:05",
     "compute-hosts": [
         {
-            "name": "10.31.178.22",
+            "hypervisor hostname": "andc-ubuntu02.an.nuagenetworks.net",
+            "service_host name": "andc-ubuntu02",
             "interfaces": [
 
                 {

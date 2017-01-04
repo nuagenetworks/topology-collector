@@ -3,14 +3,14 @@
 # get-hosts role.
 #
 [computes]
-overcloud-compute-3.localdomain
-overcloud-compute-1.localdomain
-overcloud-compute-5.localdomain
-overcloud-compute-6.localdomain
-overcloud-compute-8.localdomain
-overcloud-compute-4.localdomain
-overcloud-compute-9.localdomain
-overcloud-compute-7.localdomain
-overcloud-compute-0.localdomain
-overcloud-compute-2.localdomain
-overcloud-compute-10.localdomain
+overcloud-compute-3.localdomain service_host=overcloud-compute-3.localdomain
+overcloud-compute-1.localdomain service_host=overcloud-compute-1.localdomain
+overcloud-compute-5.localdomain service_host=overcloud-compute-5.localdomain
+overcloud-compute-6.localdomain service_host=overcloud-compute-6.localdomain
+overcloud-compute-8.localdomain service_host=overcloud-compute-8.localdomain
+overcloud-compute-4.localdomain service_host=overcloud-compute-4.localdomain
+overcloud-compute-9.localdomain service_host=overcloud-compute-9.localdomain
+overcloud-compute-7.localdomain service_host=overcloud-compute-7.localdomain
+overcloud-compute-0.localdomain service_host=overcloud-compute-0.localdomain
+overcloud-compute-2.localdomain service_host=overcloud-compute-2.localdomain
+overcloud-compute-10.localdomain service_host=overcloud-compute-10.localdomain
