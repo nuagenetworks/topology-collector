@@ -1,8 +1,8 @@
 #
 # WARNING: The contents of this file will be overwritten by the
-# get-hosts role.
+# get-hypervisors role.
 #
-[computes]
+[hypervisors]
 overcloud-compute-3.localdomain service_host=overcloud-compute-3.localdomain
 overcloud-compute-1.localdomain service_host=overcloud-compute-1.localdomain
 overcloud-compute-5.localdomain service_host=overcloud-compute-5.localdomain

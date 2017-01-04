@@ -19,6 +19,21 @@ import re
 #    under the License.
 
 
+def osc_env_dict(osc_env_string):
+    ''' Given a string representation of the output of "cat osc_env_file",
+    return a dictionary of env values for use with ansible commands.
+    '''
+    dict = {}
+    scratch = osc_env_string.replace("export ", "")
+    lines = scratch.split('\n')
+    for line in lines:
+        parts = line.strip().split('=')
+        if len(parts) < 2:
+            raise AnsibleError("unexpected env format")
+        dict[parts[0].strip()] = parts[1].strip()
+    return dict
+
+
 def hypervisor_hostnames(hstring):
     ''' Given a string representation of the output of "nova hypervisor-list",
     return a list of just the enabled hypervisor hostnames.
@@ -77,6 +92,7 @@ class FilterModule(object):
 
     def filters(self):
         return {
+            'osc_env_dict': osc_env_dict,
             'hypervisor_hostnames': hypervisor_hostnames,
             'hypervisor_names': hypervisor_names
         }

@@ -1,4 +1,18 @@
 ---
+- name: Get the osc env file contents from the controller
+  shell: cat "{{ osc_env_file }}"
+  register: osc_env_contents
+  remote_user: root
+
+- name: Print the osc env file contents when verbosity >= 1, otherwise skip
+  debug: msg="{{ osc_env_contents }}" verbosity=1
+
+- name: Create a local variable with the parsed osc env
+  set_fact: osc_env="{{ osc_env_contents.stdout|osc_env_dict }}"
+
+- name: Print the parsed osc env file contents when verbosity >= 1, otherwise skip
+  debug: msg="{{ osc_env }}" verbosity=1
+
 - name: Run nova hypervisor-list
   shell: nova hypervisor-list
   environment: "{{ osc_env }}"
@@ -32,6 +46,6 @@
 - name: Print hypervisor name list when verbosity >= 1, otherwise skip
   debug: msg="{{ hyper_names_list }}" verbosity=1
 
-- name: Write to compute_hosts file
-  template: src=compute_hosts.j2 dest=./compute_hosts
+- name: Write to hypervisors file
+  template: src=hypervisors.j2 dest=./hypervisors
   delegate_to: localhost

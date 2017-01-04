@@ -1,0 +1,12 @@
+#
+# List of OpenStack controllers to query for hypervisors.
+# Of the form:
+#
+# [controllers]
+# controller-host-name osc_env_file=/path/to/env/file/to/source
+#
+# osc_env_file is what you would source before executing nova commands.
+# It *must* be included for each controller.
+#
+[controllers]
+overcloud-controller-0.localdomain osc_env_file=/home/heat-admin/overcloudrc

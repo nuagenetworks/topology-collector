@@ -1,5 +1,0 @@
----
-- name: Clean up left-over tmp files from previous runs
-  file:
-    path: "{{ temp_dir }}"
-    state: absent

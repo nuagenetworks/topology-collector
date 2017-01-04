@@ -1,8 +1,8 @@
 #
 # WARNING: The contents of this file will be overwritten by the
-# get-hosts role.
+# get-hypervisors role.
 #
-[computes]
+[hypervisors]
 {% for line in hyper_names_list %}
 {{ line }}
 {% endfor %}

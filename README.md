@@ -13,8 +13,8 @@ The output of the code is a JSON report.
 2. Install Ansible 2.1+ on the OpenStack Controller node
 3. Configure passwordless ssh from the OpenStack Conroller node to all compute nodes
 4. Update local variables (see below)
-5. Execute `ansible-playbook -i controller_hosts get_computes.yml` (Skip if you hand-edit `compute_hosts` or you have already run this step previously and no changes in the list of compute nodes are required.)
-6. Execute `ansible-playbook -i compute_hosts get_topo.yml`
+5. Execute `ansible-playbook -i controllers get_computes.yml` (Skip if you hand-edit `hypervisors` or you have already run this step previously and no changes in the list of compute nodes are required.)
+6. Execute `ansible-playbook -i hypervisors get_topo.yml`
 
 ## Details
 
@@ -22,12 +22,12 @@ The output of the code is a JSON report.
 1. The interfaces to be processed on the compute nodes are currently `UP` as reported by the command `ip addr`
 2. The VFs for the interfaces to be processed on the compute nodes are listed in the directory /sys/class/net/<interface>/device/virt* on each compute node
 
-### Input variables
+### Input variable files
 
 Input variables are contained in the following files:
 1. `user_vars.yml`
-2. `controller_hosts`
-3. `compute_hosts`
+2. `controllers`
+3. `hypervisors`
 
 #### `user_vars.yml`
 
@@ -36,34 +36,45 @@ Input variables are contained in the following files:
 - `output_file_prefix`, text to prepend to the output file name, e.g. <output_file_prefix>.<date>@<time>.json.
 - `interface_regex`, regex to match interface names on the compute nodes. Default is `['*']`
 
-#### `controller_hosts`
+#### `controllers`
 
-Contains a flat list of controller node host names or IP addresses under the tag `[controllers]`. In most cases, this will be a list of one and only one controller.
+Contains a flat list of controller node host names or IP addresses under the tag `[controllers]`. In most cases, this will be a list of one and only one controller. In addition, each controller must have the osc_env_file path provided, e.g.
 
-#### `compute_hosts`
+```
+[controllers]
+controller_hostname osc_env_file=/path/to/env/file/to-source
+```
 
-Contains a flat list of compute node host names or IP addresses under the tag `[computes]`. This list may be populated manually or automatically. Automatic population is achieved using the get-computes role.
+Note that osc_env_file is the file you would source prior to executing `nova` commands. osc_env_file *must* be included for each controller in the list.
+
+
+#### `hypervisors`
+
+Contains a flat list of compute node host names or IP addresses under the tag `[computes]`. This list may be populated manually or automatically. Automatic population is achieved using the get-computes role. Each hypervisor must contain both the hypervisor host name and the service_host name as shown in `nova hypervisor-show`.
+
+```
+[hypervisors]
+hypervisor_hostname service_host=service_host_name
+```
 
 ### `get-computes`
 
-The `get-computes` role queries the OpenStack controller node for the list of nova hypervisors. It parses the output and writes the result to `./compute_hosts`.
+The `get-computes` role queries the OpenStack controller nodes for the list of nova hypervisors. It parses the output and writes the result to `./hypervisors`.
 
-The `get-computes` role is 
+### `get_topo.yml`
 
-### `collect_topo.yml`
+The `get_topo.yml` playbook is the main playbook for gathering topology information and producing the JSON report. It cleans up temporary files from previous runs, makes sure the temp directory exists, then executes the interface and report roles. These roles have their own playbooks and may be executed individually. The other playbooks, each representing an Ansible role, are:
 
-The `collect_topo.yml` playbook is nothing more that a set of includes of other playbooks. These component playbooks may be executed individually. The other playbooks, each representing an Ansible role, are:
-
-- `clean_tmp.yml`, when executed, this playbook destroys the `temp_dir` on disk. This is done to prevcent old files from polluting a current run.
-- `topology.yml`, when executed, queries each hosts listed in the `hosts` file's `computes` group. The output of this stage is a set of files, one per compute node, in the `temp_dir`.
+- `topology.yml`, when executed, queries each hosts listed in the `hypervisors` file's `hypervisors` group. The output of this stage is a set of files, one per compute node, in the `temp_dir`.
 - `report.yml`, when executed, pulls in the content of each JSON file found in `temp_dir` and creates a full report for all compute nodes. The full report is written to `output_dir` using a unique file name.
 
-### Custom Ansible Modules
+### Custom Ansible modules and filters
 
 The implementation includes the following custom Ansible modules written in Python:
 
 - `library\interfaces.py`, a module to query each compute node for information about its interfaces. Matching interfaces are filtered using `state` and regex match on name.
 - `library\topology.py`, a module that executes the commands for collecting infomration about each interface, converting the output to JSON.
+- `filter_plugins\nova.py`, a set of filters for massaging the outputs of various nova commands.
 
 ### Output
 

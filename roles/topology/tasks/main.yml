@@ -1,10 +1,4 @@
 ---
-- name: Make sure tmp directory {{ temp_dir }} exists
-  file:
-    path: "{{ temp_dir }}"
-    state: directory
-  delegate_to: localhost
-
 - name: Wait for ssh to be ready
   local_action:
     module: wait_for
@@ -31,9 +25,9 @@
 - name: Create output file name
   set_fact: json_outfile={{ temp_dir }}/{{ inventory_hostname }}.json
 
-- name: Write the json output to {{ json_outfile }}
+- name: Write the json output
   template: src=output.j2 dest={{ json_outfile }}
   delegate_to: 127.0.0.1
 
-- name: Print out the contents of the file {{ json_outfile }} when verbosity >= 1, skip otherwise
+- name: Print out the contents of the json output file when verbosity >= 1, skip otherwise
   debug: msg="{{ lookup('file', '{{ json_outfile }}') }}" verbosity=1

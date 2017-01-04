@@ -1,5 +1,15 @@
 ---
-- include: clean_tmp.yml
+- name: Run the whole thing
+  hosts: localhost
+  remote_user: root
+  vars_files: ["user_vars.yml"]
+
+  tasks:
+  - name: Clean up tmp files from previous runs
+    file: path="{{ temp_dir }}" state=absent
+
+  - name: Make sure tmp dir exists
+    file: path="{{ temp_dir }}" state=directory
 
 - include: topology.yml
 - include: report.yml
