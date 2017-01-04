@@ -2,4 +2,5 @@
 *.swp
 *.retry
 *.bak
+*.pyc
 *~
