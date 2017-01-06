@@ -38,18 +38,11 @@ def hypervisor_hostnames(hstring):
     ''' Given a string representation of the output of "nova hypervisor-list",
     return a list of just the enabled hypervisor hostnames.
     '''
-    BORDER_RE = "\+-+\+-+\+-+\+-+\+"
+    FINDRE = "\|\s+[0-9]+\s+\|\s+(\S+)\s+\|\s+up\s+\|\s+enabled\s+\|"
     nlist = []
-    scratch = re.split(BORDER_RE, hstring)
-    if len(scratch) < 3:
-        raise AnsibleError("unexpected output format")
-    hlist = scratch[2].strip().split('\n')
-    for host in hlist:
-        if 'enabled' in host:
-            parts = host.strip().split('|')
-            if len(parts) < 3:
-                raise AnsibleError("unexpected line format")
-            nlist.append(parts[2].strip())
+    scratch = re.findall(FINDRE, hstring)
+    for item in scratch:
+        nlist.append(item)
     return nlist
 
 
@@ -58,32 +51,19 @@ def hypervisor_names(hstring):
     return a string with hypervisor hostname and service_host name in a format
     suitable for a host inventory file, e.g. 'hostname service_host=shostname'.
     '''
-    HYPERHOSTNAME = "hypervisor_hostname"
-    SERVICEHOSTNAME = "service_host"
+    HYPERHOSTNAMERE = "\|\s+hypervisor_hostname\s+\|\s+(\S+)\s+\|"
+    SERVICEHOSTNAMERE = "\|\s+service_host\s+\|\s+(\S+)\s+\|"
     scratch = ""
-    lines = hstring.split('\n')
-    found = False
-    for line in lines:
-        if HYPERHOSTNAME in line:
-            parts = line.strip().split('|')
-            if len(parts) < 3:
-                raise AnsibleError("unexpected " + HYPERHOSTNAME + " line format")
-            scratch += parts[2].strip() + " "
-            found = True
-            break
-    if not found:
-        raise AnsibleError("error finding " + HYPERHOSTNAME)
-    found = False
-    for line in lines:
-        if SERVICEHOSTNAME in line:
-            parts = line.strip().split('|')
-            if len(parts) < 3:
-                raise AnsibleError("unexpected " + SERVICEHOSTNAME + " line format")
-            scratch += "service_host=" + parts[2].strip()
-            found = True
-            break
-    if not found:
-         raise AnsibleError("error finding " + SERVICEHOSTNAME)
+    hyper = re.search(HYPERHOSTNAMERE, hstring)
+    if hyper:
+        scratch += hyper.group(1) + " "
+    else:
+        raise AnsibleError("Hypervisor hostname not found")
+    service = re.search(SERVICEHOSTNAMERE, hstring)
+    if service:
+        scratch += "service_host=" + service.group(1)
+    else:
+        raise AnsibleError("service_host name not found")
     return scratch
 
 
