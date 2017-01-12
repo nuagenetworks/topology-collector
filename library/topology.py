@@ -65,10 +65,14 @@ def convert_ifindex_to_ifname(ifindex):
 def generate_json(interface, lldpout, lsout):
 
     LLDPSYSTEMNAME = "System Name TLV"
-    NEIGHBORNAME = "neighbor-system-name"
+    SYSTEMNAME_RE = LLDPSYSTEMNAME + "\s+(\S+)\s+"
     LLDPSYSTEMIP = "Management Address TLV"
-    NEIGHBORIP = "neighbor-system-mgmt-ip"
+    SYSTEMIP_RE = LLDPSYSTEMIP + "\s+\S+:\s+(\S+)\s+"
     LLDPSYSTEMPORT = "Port ID TLV"
+    SYSTEMPORT_RE = LLDPSYSTEMPORT + "\s+\S+:\s+(\S+)\s+"
+
+    NEIGHBORNAME = "neighbor-system-name"
+    NEIGHBORIP = "neighbor-system-mgmt-ip"
     NEIGHBORPORT = "neighbor-system-port"
 
     # Insert the interface name into the JSON object.
@@ -95,27 +99,21 @@ def generate_json(interface, lldpout, lsout):
     parsed += vf_info
 
     # Now add neighbor information
-    scratch = lldpout.replace('\n\t', '\t').strip()
-    neighborname = "None"
-    neighborip = "None"
-    neighborport = "None"
-    for line in scratch.split('\n'):
-        if re.search(LLDPSYSTEMNAME, line):
-            sys_name_tlv_parts = line.split('\t')
-            if len(sys_name_tlv_parts) >= 2:
-                neighborname = sys_name_tlv_parts[1]
-        elif re.search(LLDPSYSTEMIP, line):
-            mgmt_addr_tlv_parts = line.split('\t')
-            if len(mgmt_addr_tlv_parts) >= 2:
-                mgmt_addr_parts = mgmt_addr_tlv_parts[1].split()
-                if len(mgmt_addr_parts) >= 2:
-                    neighborip = mgmt_addr_parts[1]
-        elif re.search(LLDPSYSTEMPORT, line):
-            port_id_tlv_parts = line.split('\t')
-            if len(port_id_tlv_parts) >= 2:
-                port_id_parts = port_id_tlv_parts[1].split()
-                if len(port_id_parts) >= 2 and port_id_parts[1].isdigit():
-                    neighborport = convert_ifindex_to_ifname(port_id_parts[1])
+    scratch = re.search(SYSTEMNAME_RE, lldpout)
+    if scratch:
+        neighborname = scratch.group(1)
+    else:
+        neighborname = "None"
+    scratch = re.search(SYSTEMIP_RE, lldpout)
+    if scratch:
+        neighborip = scratch.group(1)
+    else:
+        neighborip = "None"
+    scratch = re.search(SYSTEMPORT_RE, lldpout)
+    if scratch:
+        neighborport = convert_ifindex_to_ifname(scratch.group(1))
+    else:
+        neighborport = "None"
     parsed += ",\n \"%s\": \"%s\"" % (NEIGHBORNAME, neighborname)
     parsed += ",\n \"%s\": \"%s\"" % (NEIGHBORIP, neighborip)
     parsed += ",\n \"%s\": \"%s\" " % (NEIGHBORPORT, neighborport)
