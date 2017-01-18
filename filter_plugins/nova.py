@@ -21,16 +21,21 @@ import re
 
 def osc_env_dict(osc_env_string):
     ''' Given a string representation of the output of "cat osc_env_file",
-    return a dictionary of env values for use with ansible commands.
+    return a dictionary of env values for use with ansible commands. Assumes
+    each line of the env file is of the form:
+
+    export NAME=VALUE
+
+    For example:
+
+    export OS_USERNAME=admin
+    export OS_AUTH_URL="http://10.100.100.20:35357/v3"
     '''
+    PAIR_RE = "export\s+(?P<name>\w+)=(?P<value>\S+)"
     dict = {}
-    scratch = osc_env_string.replace("export ", "")
-    lines = scratch.split('\n')
-    for line in lines:
-        parts = line.strip().split('=')
-        if len(parts) < 2:
-            raise AnsibleError("unexpected env format")
-        dict[parts[0].strip()] = parts[1].strip()
+    pairs = re.finditer(PAIR_RE, osc_env_string)
+    for pair in pairs:
+        dict[pair.group('name')] = pair.group('value').strip('"')
     return dict
 
 
