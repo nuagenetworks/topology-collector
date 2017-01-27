@@ -7,17 +7,24 @@
     search_regex: OpenSSH
     delay: 1
 
-- name: Get a list of the matching interfaces for '{{ interface_regex }}'
-  interfaces: state=UP regex={{ interface_regex }}
-  register: interface_list
+- name: Initialize interface_list
+  set_fact:
+    interface_list: []
+
+- name: List the ansible interfaces
+  set_fact:
+    interface_list: "{{ interface_list }} + ['{{ item }}']"
+  when: item.find(interface_regex) > -1
+  with_items: "{{ ansible_interfaces }}"
 
 - name: Display interface list when verbosity >= 1, skip otherwise
-  debug: msg="{{ interface_list.matches }}" verbosity=1
+  debug: msg="{{ interface_list }}" verbosity=1
 
 - name: Execute topology collector
   topology: system_name={{ inventory_hostname}} interface={{ item }}
-  with_items: "{{ interface_list.matches }}"
+  with_items: "{{ interface_list }}"
   register: interface_json
+  ignore_errors: yes
 
 - name: Display topology json when verbosity >= 1, skip otherwise
   debug: msg="{{ interface_json }}" verbosity=1

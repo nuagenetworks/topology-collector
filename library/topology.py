@@ -5,7 +5,7 @@ import re
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import b
 
-# Copyright 2016 Nokia
+# Copyright 2017 Nokia
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -137,29 +137,17 @@ def main():
     startd = datetime.datetime.now()
 
     lldpcmd = "%s -t -n -i %s" % (LLDPTOOL, interface)
-    lldprc, lldpout, lldperr = module.run_command(lldpcmd, check_rc=True)
 
+    lldprc, lldpout, lldperr = module.run_command(lldpcmd)
     if lldperr is None:
         lldperr = b('')
-
     if lldpout is None:
         lldpout = b('')
-
     if lldprc != 0:
-        module.fail_json(msg="lldptool command failed",
-                         lldprc=lldprc,
-                         lldpcmd=lldpcmd,
-                         system_name=system_name,
-                         interface=interface,
-                         stdout=lldpout,
-                         stderr=lldperr,
-                         start=str(startd),
-                         end=str(datetime.datetime.now()),
-                         delta=str(datetime.datetime.now()-startd),
-                         changed=False)
+        lldpout = b('')
 
     lscmd = "%s -la /sys/class/net/%s/device/" % (LS, interface)
-    lsrc, lsout, lserr = module.run_command(lscmd, check_rc=True)
+    lsrc, lsout, lserr = module.run_command(lscmd)
 
     if lserr is None:
         lserr = b('')
@@ -167,20 +155,8 @@ def main():
     if lsout is None:
         lsout = b('')
 
-    if lsrc != 0:
-        module.fail_json(msg="ls command failed",
-                         lsrc=lsrc,
-                         lscmd=lscmd,
-                         system_name=system_name,
-                         interface=interface,
-                         stdout=lsout,
-                         stderr=lserr,
-                         lldpout=lldpout,
-                         lldperr=lldperr,
-                         start=str(startd),
-                         end=str(datetime.datetime.now()),
-                         delta=str(datetime.datetime.now()-startd),
-                         changed=False)
+    if lldprc != 0:
+        lldpout = b('')
 
     module.exit_json(lldpcmd=lldpcmd,
                      lscmd=lscmd,
