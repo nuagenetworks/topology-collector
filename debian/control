@@ -1,0 +1,12 @@
+Source: nuage-topology-collector
+Maintainer: infra-nuage <infra-nuage@list.nokia.com>
+Section: net
+Priority: optional
+Build-Depends: debhelper (>= 9~)
+Standards-Version: 3.9.3
+Homepage: http://nuagenetworks.net/
+
+Package: nuage-topology-collector
+Architecture: all
+Depends: ansible (>= 2.1.0), ${misc:Depends}
+Description: collects Neighbor LLDP connectivity and VF port PCI information

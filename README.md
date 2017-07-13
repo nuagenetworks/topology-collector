@@ -241,5 +241,46 @@ The name of the file will be of the form `<output_file_prefix>.<date>@<time>.jso
             ]
         }
     ]
-}      
+}
 ```
+
+## Build & Package installation
+
+Package build scripts are under `build` directory
+
+to build ubuntu packages, just run
+
+```
+bash build/build_nuage_deb.sh
+```
+
+to build el7 packages, just run
+```
+build build_nuage_rpm.sh
+```
+
+This package requires ansible >= 2.1.0 as dependency
+
+for ubuntu, install from ansible ppa to get latest ansible package.
+```
+sudo add-apt-repository ppa:ansible/ansible
+sudo apt-get update
+sudo apt-get install ansible
+```
+
+for centos7, install latest ansible from `EPEL`
+```
+sudo yum install epel-release
+sudo yum install ansible
+```
+
+then install this package by either
+```
+sudo dpkg -i nuage-topology-collector*
+```
+or
+```
+sudo yum localinstall nuage-topology-collector*
+```
+
+the content of this package is under `/opt/nuage/topology-collector`
