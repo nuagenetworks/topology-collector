@@ -9,7 +9,8 @@ debuild -d -i -us -uc -b -kinfo@nuagenetworks.net
 
 mv ../${PACKAGE_NAME}* .
 
-if [ -n "$BUILD_NAME" ]
-then
-    dpkg-sig -k 83496517 -s builder ${PACKAGE_NAME}_*.changes
-fi
+# Skipping package signature for now
+#if [ -n "$BUILD_NAME" ]
+#then
+#    dpkg-sig -k 83496517 -s builder ${PACKAGE_NAME}_*.changes
+#fi
