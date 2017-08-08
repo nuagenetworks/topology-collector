@@ -13,14 +13,14 @@ The output of the code is a JSON report.
 2. Install Ansible 2.1+ on the OpenStack Controller node
 3. Configure passwordless ssh from the OpenStack Conroller node to all compute nodes
 4. Update local variables (see below)
-5. Execute `ansible-playbook -i controllers get_computes.yml` (Skip if you hand-edit `hypervisors` or you have already run this step previously and no changes in the list of compute nodes are required.)
+5. Execute `ansible-playbook -i controllers get_hypervisors.yml` (Skip if you hand-edit `hypervisors` or you have already run this step previously and no changes in the list of compute nodes are required.)
 6. Execute `ansible-playbook -i hypervisors get_topo.yml`
 
 ## Details
 
 ### Assumptions
 1. The interfaces to be processed on the compute nodes are currently `UP` as reported by the command `ip addr`
-2. The VFs for the interfaces to be processed on the compute nodes are listed in the directory /sys/class/net/<interface>/device/virt* on each compute node
+2. The VFs for the interfaces to be processed on the compute nodes are listed in the directory /sys/class/net/\<interface\>/device/virt* on each compute node
 
 ### Input variable files
 
@@ -57,9 +57,9 @@ Contains a flat list of compute node host names or IP addresses under the tag `[
 hypervisor_hostname service_host=service_host_name
 ```
 
-### `get-computes`
+### `get-hypervisors`
 
-The `get-computes` role queries the OpenStack controller nodes for the list of nova hypervisors. It parses the output and writes the result to `./hypervisors`.
+The `get-hypervisors` role queries the OpenStack controller nodes for the list of nova hypervisors. It parses the output and writes the result to `./hypervisors`.
 
 ### `get_topo.yml`
 
