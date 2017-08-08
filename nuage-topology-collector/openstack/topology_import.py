@@ -12,11 +12,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 import argparse
-import collections
-import ConfigParser
+import getpass
 import json
-import sys
 
+from keystoneauth1 import identity
+from keystoneauth1 import session
 from neutronclient.v2_0 import client as neutron_client
 
 
@@ -60,46 +60,30 @@ class TopologyConverter(object):
         return {'pci_slot': virtual_function['pci-id']}
 
 
-def read_config(neutron_conf):
-    config = ConfigParser.ConfigParser()
-    config.read(neutron_conf)
-
-    section = 'keystone_authtoken'
-    settings = config.options(section)
-    if 'auth_url' in settings:
-        auth_url = config.get(section, 'auth_url')
-    elif 'auth_host' in settings:
-        host = config.get(section, 'auth_host')
-        if 'auth_protocol' in settings:
-            protocol = config.get(section, 'auth_protocol')
-        else:
-            protocol = 'https'
-        if 'auth_port' in settings:
-            port = config.get(section, 'auth_port')
-        else:
-            port = '35357'
-
-        auth_url = '%s://%s:%s/v2.0' % (protocol, host, port)
-    else:
-        print "Failed to read keystone auth url."
-        sys.exit(1)
-
-    tenant_name = config.get(section, 'admin_tenant_name')
-    username = config.get(section, 'admin_user')
-    password = config.get(section, 'admin_password')
-    Config = collections.namedtuple('Config', ['tenant_name', 'username',
-                                               'password', 'auth_url'])
-    return Config(tenant_name=tenant_name,
-                  username=username,
-                  password=password,
-                  auth_url=auth_url)
-
-
 def init_arg_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config', action='store',
-                        default='/etc/neutron/neutron.conf',
-                        help='The location of the neutron.conf file')
+    parser.add_argument('--keystone-auth-url', action='store',
+                        dest='auth_url', required=True,
+                        default='http://127.0.0.1/identity',
+                        help='The auth url of the keystone service')
+    parser.add_argument('--username', action='store', required=True,
+                        help='The username to authenticate with keystone')
+    parser.add_argument('--password', action='store',
+                        default=None,
+                        help='The password to authenticate with keystone')
+
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('--project-name', action='store',
+                       help='[v3] The keystone project name')
+    group.add_argument('--tenant-name', action='store',
+                       dest='project_name',
+                       help='[v2] The keystone tenant name')
+
+    parser.add_argument('--user-domain-id', action='store',
+                        help='[v3] The keystone user domain id')
+    parser.add_argument('--project-domain-id', action='store',
+                        help='[v3] The keystone project domain id')
+
     parser.add_argument('topology_file', action='store',
                         help='The path to the topology json file.')
     return parser
@@ -108,12 +92,21 @@ def init_arg_parser():
 def main():
     parser = init_arg_parser()
     args = parser.parse_args()
-    config = read_config(args.config)
 
-    neutronclient = neutron_client.Client(auth_url=config.auth_url,
-                                          username=config.username,
-                                          tenant_name=config.tenant_name,
-                                          password=config.password)
+    password = args.password or getpass.getpass('Enter password for user %s:'
+                                                % args.username)
+    is_v3 = args.project_name is not None
+    identity_args = {'auth_url': args.auth_url,
+                     'username': args.username,
+                     'password': password,
+                     'project_name': args.project_name}
+    if is_v3:
+        identity_args['project_domain_id'] = args.project_domain_id
+        identity_args['user_domain_id'] = args.user_domain_id
+
+    auth = identity.Password(**identity_args)
+    sess = session.Session(auth=auth)
+    neutronclient = neutron_client.Client(retries=2, session=sess)
 
     reader = TopologyReader(args.topology_file)
     converter = TopologyConverter(neutronclient)
