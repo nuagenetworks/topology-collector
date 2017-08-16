@@ -14,10 +14,16 @@
 import argparse
 import getpass
 import json
+import logging
 
 from keystoneauth1 import identity
 from keystoneauth1 import session
 from neutronclient.v2_0 import client as neutron_client
+
+from utils import script_logging
+
+script_name = 'topology_import'
+LOG = logging.getLogger(script_name)
 
 
 class TopologyReader(object):
@@ -31,8 +37,10 @@ class TopologyReader(object):
             return json.load(topology_file)
 
     def interfaces(self):
-        for compute_host in self.json_data['compute-hosts']:
-            for interface in compute_host['interfaces']:
+        for compute_host in script_logging.iterate(
+                self.json_data['compute-hosts'], 'compute hosts'):
+            for interface in script_logging.iterate(compute_host['interfaces'],
+                                                    'interfaces'):
                 interface['host_id'] = compute_host['service_host name']
                 yield interface
 
@@ -89,9 +97,31 @@ def init_arg_parser():
     return parser
 
 
+@script_logging.step(description="importing topology")
+def import_interfaces(neutronclient, reader, converter):
+    for interface in reader.interfaces():
+        for switchport_mapping in script_logging.iterate(
+                converter.interface_to_mappings(interface),
+                'interface mappings'):
+            if switchport_mapping:
+                LOG.debug("Sending %s",
+                          {'switchport_mapping': switchport_mapping})
+            try:
+                neutronclient.post(
+                    '/net-topology/switchport_mappings',
+                    body={'switchport_mapping': switchport_mapping})
+            except Exception as e:
+                with script_logging.indentation():
+                    LOG.user("Failed to import interface: %s",
+                             e.message, exc_info=True)
+
+
 def main():
     parser = init_arg_parser()
     args = parser.parse_args()
+
+    if not script_logging.log_file:
+        script_logging.init_logging(script_name)
 
     password = args.password or getpass.getpass('Enter password for user %s:'
                                                 % args.username)
@@ -110,14 +140,8 @@ def main():
 
     reader = TopologyReader(args.topology_file)
     converter = TopologyConverter(neutronclient)
-    for interface in reader.interfaces():
-        switchport_mappings = converter.interface_to_mappings(interface)
-        if switchport_mappings:
-            print ("Sending interface %s to neutron."
-                   % interface['neighbor-system-mgmt-ip'])
-            neutronclient.post(
-                '/net-topology/switchport_mappings',
-                body={'switchport_mappings': switchport_mappings})
+    import_interfaces(neutronclient, reader, converter)
+
 
 if __name__ == '__main__':
     main()
