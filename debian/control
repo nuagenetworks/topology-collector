@@ -8,5 +8,5 @@ Homepage: http://nuagenetworks.net/
 
 Package: nuage-topology-collector
 Architecture: all
-Depends: ansible (>= 2.1.0), ${misc:Depends}
+Pre-Depends: ansible (>= 2.1.0), ${misc:Depends}
 Description: collects Neighbor LLDP connectivity and VF port PCI information
