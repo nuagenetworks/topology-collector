@@ -29,7 +29,7 @@
   debug: msg="{{ hyper_list }}" verbosity=1
 
 - name: Run nova hypervisor-show
-  shell: nova hypervisor-show {{ item }}
+  shell: nova hypervisor-show --wrap 0 {{ item }}
   environment: "{{ osc_env }}"
   register: nova_hlist_show
   with_items: "{{ hyper_list }}"
