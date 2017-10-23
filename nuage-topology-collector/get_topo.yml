@@ -1,7 +1,7 @@
 ---
 - name: Run the whole thing
   hosts: localhost
-  remote_user: root
+  remote_user: "{{ remote_usr }}"
   vars_files: ["user_vars.yml"]
 
   tasks:

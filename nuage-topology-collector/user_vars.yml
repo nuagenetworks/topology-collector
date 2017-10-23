@@ -1,5 +1,10 @@
+# These values can be change according to the admin.
+# Make sure that the remote_usr have right permission for these
+# file and directory to create.
 ---
   temp_dir: /tmp/topo-coll/tmp/
   output_dir: /tmp/topo-coll/reports
   output_file_prefix: topo_report
   interface_regex: en
+  remote_usr: root
+

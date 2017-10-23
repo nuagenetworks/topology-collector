@@ -56,19 +56,31 @@ def hypervisor_names(hstring):
     return a string with hypervisor hostname and service_host name in a format
     suitable for a host inventory file, e.g. 'hostname service_host=shostname'.
     '''
+
     HYPERHOSTNAMERE = "\|\s+hypervisor_hostname\s+\|\s+(\S+)\s+\|"
     SERVICEHOSTNAMERE = "\|\s+service_host\s+\|\s+(\S+)\s+\|"
+    HYPERHOSTIPRE = "\|\s+host_ip\s+\|\s+(\S+)\s+\|"
+
     scratch = ""
+
+    host_ip = re.search(HYPERHOSTIPRE, hstring)
+    if host_ip:
+        scratch += host_ip.group(1) + " "
+    else:
+        raise AnsibleError("host_ip name not found")
+
     hyper = re.search(HYPERHOSTNAMERE, hstring)
     if hyper:
-        scratch += hyper.group(1) + " "
+        scratch += "hostname=" + hyper.group(1) + " "
     else:
         raise AnsibleError("Hypervisor hostname not found")
+
     service = re.search(SERVICEHOSTNAMERE, hstring)
     if service:
-        scratch += "service_host=" + service.group(1)
+        scratch += "service_host=" + service.group(1) + " "
     else:
         raise AnsibleError("service_host name not found")
+
     return scratch
 
 
@@ -81,4 +93,3 @@ class FilterModule(object):
             'hypervisor_hostnames': hypervisor_hostnames,
             'hypervisor_names': hypervisor_names
         }
-

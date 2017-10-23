@@ -20,8 +20,14 @@
 - name: Display interface list when verbosity >= 1, skip otherwise
   debug: msg="{{ interface_list }}" verbosity=1
 
+- name: Ensure lldpad service is running
+  become: true
+  service:
+    name: lldpad
+    state: started
+
 - name: Execute topology collector
-  topology: system_name={{ inventory_hostname}} interface={{ item }}
+  topology: system_name={{ inventory_hostname }} interface={{ item }}
   with_items: "{{ interface_list }}"
   register: interface_json
   ignore_errors: yes

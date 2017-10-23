@@ -2,7 +2,7 @@
 - name: Get the osc env file contents from the controller
   shell: cat "{{ osc_env_file }}"
   register: osc_env_contents
-  remote_user: root
+  remote_user: "{{ remote_usr }}"
 
 - name: Print the osc env file contents when verbosity >= 1, otherwise skip
   debug: msg="{{ osc_env_contents }}" verbosity=1
@@ -17,7 +17,7 @@
   shell: nova hypervisor-list
   environment: "{{ osc_env }}"
   register: nova_hlist
-  remote_user: root
+  remote_user: "{{ remote_usr }}"
 
 - name: Print hypervisor list when verbosity >= 1, otherwise skip
   debug: msg="{{ nova_hlist }}" verbosity=1
@@ -33,7 +33,7 @@
   environment: "{{ osc_env }}"
   register: nova_hlist_show
   with_items: "{{ hyper_list }}"
-  remote_user: root
+  remote_user: "{{ remote_usr }}"
 
 - name: Create local variable with hypervisor names
   set_fact: hyper_names="{{ item.stdout|hypervisor_names }}"
@@ -47,5 +47,6 @@
   debug: msg="{{ hyper_names_list }}" verbosity=1
 
 - name: Write to hypervisors file
+  become: true
   template: src=hypervisors.j2 dest=./hypervisors
   delegate_to: localhost

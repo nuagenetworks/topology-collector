@@ -2,9 +2,9 @@
 
 import datetime
 import re
+import os
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import b
-
 # Copyright 2017 Nokia
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -135,8 +135,8 @@ def main():
     LS = module.get_bin_path('ls', True)
 
     startd = datetime.datetime.now()
-
-    lldpcmd = "%s -t -n -i %s" % (LLDPTOOL, interface)
+    prefix = "sudo " if os.getlogin() != "root" else ""
+    lldpcmd = prefix + "%s -t -n -i %s" % (LLDPTOOL, interface)
 
     lldprc, lldpout, lldperr = module.run_command(lldpcmd)
     if lldperr is None:
