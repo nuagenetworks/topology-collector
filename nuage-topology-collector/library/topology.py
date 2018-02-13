@@ -1,8 +1,9 @@
 #!/usr/bin/python
 
 import datetime
-import re
 import os
+import re
+
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import b
 # Copyright 2017 Nokia
@@ -22,11 +23,13 @@ from ansible.module_utils.six import b
 DOCUMENTATION = '''
 ---
 module: topology
-short_description: Given an interface, returns VSG ToR port and VF PCI info in JSON
+short_description: Given an interface, returns VSG ToR port and
+VF PCI info in JSON
 options:
   system_name:
     description:
-      - The system name or IP address of the compute node being processed
+      - The system name or IP address of the compute node
+        being processed
     required: true
   interface:
     description:
@@ -39,9 +42,20 @@ EXAMPLES = '''
 - topoloy: system_name=cas-cs2-011 interfaace=eno4
 '''
 
-# convert_ifindex_to_ifname() is a function that converts the ifindex we get from
-# the Port ID TLV output of lldptool into the ifname of the form x/y/z.
+# convert_ifindex_to_ifname() is a function that converts the ifindex
+# we get from the Port ID TLV output of lldptool into the ifname
+# of the form x/y/z.
 # ifindex is a string that represents an integer, e.g. "37781504".
+# High Port Count format:
+#  32 bits unsigned integer, from most significant to least significant:
+#   3 bits: 000 -> indicates physical port
+#   4 bits: slot number
+#   2 bits: High part of port number
+#   2 bits: mda number
+#   6 bits: Low part of port number
+#  15 bits: channel number
+#  High and low part of port number need to be combined to create 8 bit
+#  unsigned int
 # If ifindex does not represent an int we return "None".
 
 
@@ -50,16 +64,17 @@ def convert_ifindex_to_ifname(ifindex):
         return "None"
     return "%s/%s/%s" % (
         (int(ifindex) >> 25),
-        (int(ifindex) >> 21) & 0xf,
-        (int(ifindex) >> 15) & 0x3f)
+        (int(ifindex) >> 21) & 0x3,
+        ((int(ifindex) >> 15) & 0x3f) | ((int(ifindex) >> 17) & 0xc0))
 
 
-# generate_json() is a function that takes two input strings of specific syntax and
-# creates a JSON string from specific portions of those outputs. The input strings
-# are generated from two specific commands. As such, this function is tightly comupled
-# to the outputs of those commands. The first command is lldptool. The second is ls.
-# The exact syntax of these commands is shown in the main() function in this file.
-# If the outputs or commands change, the code in this function must change with them.
+# generate_json() is a function that takes two input strings of specific
+# syntax and creates a JSON string from specific portions of those outputs.
+# The input strings are generated from two specific commands. As such, this
+# function is tightly comupled to the outputs of those commands. The first
+# command is lldptool. The second is ls. The exact syntax of these commands
+# is shown in the main() function in this file. If the outputs or commands
+# change, the code in this function must change with them.
 
 
 def generate_json(interface, lldpout, lsout):
