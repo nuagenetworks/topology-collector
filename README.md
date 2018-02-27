@@ -54,7 +54,7 @@ Contains a flat list of compute node host names or IP addresses under the tag `[
 
 ```
 [hypervisors]
-hypervisor_hostname service_host=service_host_name
+host_ip hostname=hypervisor_hostname service_host=service_host_name
 ```
 
 ### `get-hypervisors`
@@ -284,3 +284,67 @@ sudo yum localinstall nuage-topology-collector*
 ```
 
 the content of this package is under `/opt/nuage/topology-collector`
+
+Example Output of LLDP command on WBX
+
+```
+Chassis ID TLV
+       MAC: d0:99:d5:a1:d0:41
+Port ID TLV
+       Local: 35749888
+Time to Live TLV
+       121
+Port Description TLV
+       25-Gig Ethernet
+System Name TLV
+       cas-sf6-014
+System Capabilities TLV
+       System capabilities:  Bridge, Router
+       Enabled capabilities: Bridge, Router
+Management Address TLV
+       IPv4: 10.101.2.114
+       Ifindex: 1
+       OID:
+System Description TLV
+       TiMOS-DC-B-0.0.PR1878-106277 both/x86 NUAGE 210 Copyright (c) 2000-2018 Nokia.
+All rights reserved. All use subject to applicable license agreements.
+Built on Fri Jan 5 10:40:00 PST 2018 [106277] by builder in /build/workspace/sros-build/panos/main
+
+End of LLDPDU TLV
+
+```
+
+Example Output of LLDP command on Cisco
+```
+Chassis ID TLV
+MAC: 10:05:ca:f4:f2:bd
+Port ID TLV
+Ifname: Ethernet1/2/2
+Time to Live TLV
+120
+Port Description TLV
+Ethernet1/2/2
+System Name TLV
+cisco_ovsdb
+System Description TLV
+Cisco Nexus Operating System (NX-OS) Software 7.0(3)I7(1)
+TAC support: http://www.cisco.com/tac
+Copyright (c) 2002-2017, Cisco Systems, Inc. All rights reserved.
+System Capabilities TLV
+System capabilities:  Bridge, Router
+Enabled capabilities: Bridge, Router
+Management Address TLV
+IPv4: 135.227.145.246
+Ifindex: 83886080
+Cisco 4-wire Power-via-MDI TLV
+4-Pair PoE supported
+Spare pair Detection/Classification not required
+PD Spare pair Desired State: Disabled
+PSE Spare pair Operational State: Disabled
+Port VLAN ID TLV
+PVID: 1
+Management Address TLV
+MAC: 10:05:ca:f4:f2:bd
+Ifindex: 83886080
+End of LLDPDU TLV
+```

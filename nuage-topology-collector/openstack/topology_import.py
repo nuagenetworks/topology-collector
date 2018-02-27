@@ -24,6 +24,8 @@ from utils import script_logging
 
 script_name = 'topology_import'
 LOG = logging.getLogger(script_name)
+interface_of_compute_with_error = {}
+compute_host_name = None
 
 
 class TopologyReader(object):
@@ -37,12 +39,34 @@ class TopologyReader(object):
             return json.load(topology_file)
 
     def interfaces(self):
-        for compute_host in script_logging.iterate(
-                self.json_data['compute-hosts'], 'compute hosts'):
-            for interface in script_logging.iterate(compute_host['interfaces'],
-                                                    'interfaces'):
-                interface['host_id'] = compute_host['service_host name']
-                yield interface
+        global compute_host_name
+        compute_host_index = 0
+        total_compute_host = len(self.json_data['compute-hosts'])
+        for compute_host in self.json_data['compute-hosts']:
+            compute_host_name = str(self.json_data['compute-hosts']
+                                    [compute_host_index]
+                                    ['hypervisor hostname'])
+            msg = "\n Processing Compute Host - " + compute_host_name
+
+            total_compute_host_left = total_compute_host - compute_host_index
+            msg = msg + ", Total Computes Left: %s" % total_compute_host_left
+            LOG.user(msg)
+            compute_host_index = compute_host_index + 1
+            total_interfaces_within_compute = len(compute_host['interfaces'])
+            interfaces_within_compute_index = 0
+            for interface in compute_host['interfaces']:
+                with script_logging.indentation():
+                    msg = " Procesing Interface - " + interface["name"]
+                    total_interfaces_within_compute_left = \
+                        total_interfaces_within_compute - \
+                        interfaces_within_compute_index
+                    msg = msg + (", Total Interfaces Left: %s" %
+                                 total_interfaces_within_compute_left)
+                    LOG.user(msg)
+                    interfaces_within_compute_index = \
+                        interfaces_within_compute_index + 1
+                    interface['host_id'] = compute_host['service_host name']
+                    yield interface
 
 
 class TopologyConverter(object):
@@ -62,6 +86,12 @@ class TopologyConverter(object):
             vf_mapping = self.function_to_mapping(virtual_function)
             interface_mapping = dict(base_mapping, **vf_mapping)
             interface_mappings.append(interface_mapping)
+        with script_logging.indentation():
+            if not interface_mappings:
+                LOG.user("No Interface mapping exsits for %s " %
+                         interface["name"])
+            else:
+                LOG.user("Processing  %s  mappings" % len(interface_mappings))
         return interface_mappings
 
     def function_to_mapping(self, virtual_function):
@@ -99,21 +129,54 @@ def init_arg_parser():
 
 @script_logging.step(description="importing topology")
 def import_interfaces(neutronclient, reader, converter):
+    global compute_host_name, interface_of_compute_with_error
     for interface in reader.interfaces():
-        for switchport_mapping in script_logging.iterate(
-                converter.interface_to_mappings(interface),
-                'interface mappings'):
-            if switchport_mapping:
-                LOG.debug("Sending %s",
-                          {'switchport_mapping': switchport_mapping})
-            try:
-                neutronclient.post(
-                    '/net-topology/switchport_mappings',
-                    body={'switchport_mapping': switchport_mapping})
-            except Exception as e:
+        with script_logging.indentation():
+            mapping = []
+            for switchport_mapping in converter.interface_to_mappings(
+                    interface):
+                if switchport_mapping:
+                    LOG.debug("Sending %s",
+                              {'switchport_mapping': switchport_mapping})
+
+                try:
+                    neutronclient.post(
+                        '/net-topology/switchport_mappings',
+                        body={'switchport_mapping': switchport_mapping})
+                    LOG.debug("Successfully imported the SwitchPort Mapping")
+                except Exception as e:
+                    with script_logging.indentation():
+                        msg_arg = {
+                            "error_msg": e.message,
+                            "switchport_mapping": switchport_mapping,
+                            "interface": interface["name"]
+                        }
+                        LOG.user("Failed to import SwitchPort Mapping:"
+                                 " %(switchport_mapping)s" % msg_arg,
+                                 exc_info=True)
+                        LOG.user("ERROR: %(error_msg)s" % msg_arg)
+                        mapping.append(switchport_mapping)
+                    interface_of_compute_with_error.update({
+                        (compute_host_name, interface["name"]): mapping})
+
+    LOG.debug("\n")
+    LOG.debug("-----------------")
+    LOG.debug("  Failure Summary")
+    LOG.debug("-------------------")
+    LOG.debug("Errors Occured in:")
+
+    for (compute_name, interface_name), switchport_mapping in \
+            interface_of_compute_with_error.iteritems():
+        with script_logging.indentation():
+            LOG.debug("Compute Host %s" % compute_name)
+            with script_logging.indentation():
+                LOG.debug("Interface Name: %s" % interface_name)
                 with script_logging.indentation():
-                    LOG.user("Failed to import interface: %s",
-                             e.message, exc_info=True)
+                    for mapping in switchport_mapping:
+                            LOG.debug("SwitchPort Mapping: %s" % mapping)
+
+    LOG.debug("\n")
+    LOG.user("Complete!! Please check the log file for Summary")
 
 
 def main():

@@ -189,7 +189,10 @@ def iterate(iterable, resource_name_plural,
     last_log_time = start
     time_history = collections.deque(maxlen=5)
 
-    LOG.user("Start processing %(total)s%(resource_name_plural)s" % msg_args)
+    LOG.user("Processing: "
+             "%(resource_name_plural)s " % msg_args)
+    LOG.user("Total resource left: %(total)s" % msg_args)
+
     try:
         with indentation():
             for i, x in enumerate(iterable):
