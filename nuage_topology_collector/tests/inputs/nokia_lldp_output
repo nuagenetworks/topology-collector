@@ -1,0 +1,23 @@
+Chassis ID TLV
+       MAC: d0:99:d5:a1:d0:41
+Port ID TLV
+       Local: 35749888
+Time to Live TLV
+       121
+Port Description TLV
+       25-Gig Ethernet
+System Name TLV
+       cas-sf6-014
+System Capabilities TLV
+       System capabilities:  Bridge, Router
+       Enabled capabilities: Bridge, Router
+Management Address TLV
+       IPv4: 10.101.2.114
+       Ifindex: 1
+       OID:
+System Description TLV
+       TiMOS-DC-B-0.0.PR1878-106277 both/x86 NUAGE 210 Copyright (c) 2000-2018 Nokia.
+All rights reserved. All use subject to applicable license agreements.
+Built on Fri Jan 5 10:40:00 PST 2018 [106277] by builder in /build/workspace/sros-build/panos/main
+
+End of LLDPDU TLV

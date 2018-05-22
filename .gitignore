@@ -9,6 +9,7 @@ doc/build
 *.orig
 *.DS_Store
 *.pyc
+nuage_topology_collector.egg-info/
 pbr*.egg/
 setuptools*.egg/
 *.log

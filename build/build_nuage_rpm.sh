@@ -17,7 +17,7 @@ setup_build_env() {
 }
 
 rename_topology_collector() {
-    mv -T "nuage-topology-collector" \
+    mv -T "nuage_topology_collector" \
         "nuage-topology-collector-${PKG_VERSION}"
 }
 

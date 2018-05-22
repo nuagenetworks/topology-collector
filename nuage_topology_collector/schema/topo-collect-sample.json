@@ -6,28 +6,28 @@
             "service_host name": "andc-ubuntu02",
             "interfaces": [
 
-                { 
+                {
  "name": "eno1",
  "vf_info": [],
  "neighbor-system-name": "cas-sf3-009",
  "neighbor-system-mgmt-ip": "10.101.2.2",
  "neighbor-system-port": "1/1/9"  },
 
-                { 
+                {
  "name": "eno4",
  "vf_info": [],
  "neighbor-system-name": "None",
  "neighbor-system-mgmt-ip": "None",
  "neighbor-system-port": "None"  },
 
-                { 
+                {
  "name": "ens15f0",
  "vf_info": [],
  "neighbor-system-name": "cas-sf3-009",
  "neighbor-system-mgmt-ip": "10.101.2.2",
  "neighbor-system-port": "1/1/1"  },
 
-                { 
+                {
  "name": "ens15f1",
  "vf_info": [
  { "device-name": "virtfn0", "pci-id": "0000:03:06.0" },

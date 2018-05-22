@@ -17,7 +17,6 @@ import os
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import b
 import re
-import ast
 from abc import abstractmethod
 DOCUMENTATION = '''
 ---
@@ -44,8 +43,8 @@ EXAMPLES = '''
 
 class Switch(object):
 
-    def __init__(self):
-        pass
+    def __init__(self, name):
+        self.name = name
 
     # generate_json() is a function that takes two input strings of
     # specific syntax and creates a JSON string from specific portions
@@ -57,31 +56,110 @@ class Switch(object):
     # function must change with them.
 
     @abstractmethod
-    def generate_json(self, interface, lldpout, lsout, mapping_dict=None):
+    def generate_json(self, interface, lldpout, lsout):
         pass
+
+    @staticmethod
+    def validate_lldp(lldpout):
+        LLDPSYSTEMNAME = "System Name TLV"
+        SYSTEMNAME_RE = LLDPSYSTEMNAME + "\s+(\S+)\s+"
+        LLDPSYSTEMIP = "Management Address TLV"
+        SYSTEMIP_RE = LLDPSYSTEMIP + "\s+\S+:\s+(\S+)\s+"
+        LLDPSYSTEMPORT = "Port ID TLV"
+        SYSTEMPORT_RE = LLDPSYSTEMPORT + "\s+\S+:\s+(\S+)\s+"
+
+        raise_error = False
+
+        neighborname = "None"
+        neighborip = "None"
+        neighborport = "None"
+
+        # Now add neighbor information
+        scratch = re.search(SYSTEMNAME_RE, lldpout)
+        if scratch:
+            neighborname = scratch.group(1)
+        else:
+            raise_error = True
+
+        scratch = re.search(SYSTEMIP_RE, lldpout)
+        if scratch:
+            neighborip = scratch.group(1)
+        else:
+            raise_error = True
+
+        scratch = re.search(SYSTEMPORT_RE, lldpout)
+        if scratch:
+            neighborport = scratch.group(1)
+        else:
+            raise_error = True
+
+        if raise_error:
+            raise Exception(neighborname, neighborip, neighborport)
+
+        return neighborname, neighborip, neighborport
+
+    @staticmethod
+    def create_vfs_json(interface, lsout):
+        # Insert the interface name into the JSON object.
+        vfs_info = "\n \"name\": \"%s\"" % interface
+
+        # Insert VF port info
+        vf_info = ",\n \"vf_info\": ["
+        lines = lsout.split('\n')
+        found_first_match = False
+        for line in lines:
+            if re.search(" virt", line) and "->" in line:
+                fmt = ",\n { \"device-name\": \"%s\""
+                vf_parts = line.split("->")
+                vif_info = vf_parts[0].split()[-1]
+                pci_id = vf_parts[-1].split('/')
+                if (vf_info and re.search("virt", vif_info) and
+                        pci_id and len(pci_id) >= 2):
+                    if not found_first_match:
+                        found_first_match = True
+                        fmt = "\n { \"device-name\": \"%s\""
+                    vf_info += fmt % vif_info
+                    vf_info += ", \"pci-id\": \"%s\" }" % pci_id[-1]
+        vf_info += "]"
+        vfs_info += vf_info
+        return vfs_info
+
+    @staticmethod
+    def create_system_json(parsed, neighborname, neighborip, neighborport):
+
+        NEIGHBORNAME = "neighbor-system-name"
+        NEIGHBORIP = "neighbor-system-mgmt-ip"
+        NEIGHBORPORT = "neighbor-system-port"
+
+        parsed += ",\n \"%s\": \"%s\"" % (NEIGHBORNAME, neighborname)
+        parsed += ",\n \"%s\": \"%s\"" % (NEIGHBORIP, neighborip)
+        parsed += ",\n \"%s\": \"%s\" " % (NEIGHBORPORT, neighborport)
+
+        return "{ %s }" % parsed
 
 
 class NokiaSwitch(Switch):
     def __init__(self):
-        super(NokiaSwitch, self).__init__()
+        super(NokiaSwitch, self).__init__('nokia')
 
     # convert_ifindex_to_ifname() is a function that converts the ifindex
     # we get from the Port ID TLV output of lldptool into the ifname
     # of the form x/y/z.
     # ifindex is a string that represents an integer, e.g. "37781504".
     # High Port Count format:
-    #  32 bits unsigned integer, from most significant to least significant:
+    # 32 bits unsigned integer, from most significant to least significant:
     #   3 bits: 000 -> indicates physical port
     #   4 bits: slot number
     #   2 bits: High part of port number
     #   2 bits: mda number
     #   6 bits: Low part of port number
     #  15 bits: channel number
-    #  High and low part of port number need to be combined to create 8 bit
-    #  unsigned int
+    # High and low part of port number need to be combined to create 8 bit
+    # unsigned int
     # If ifindex does not represent an int we return "None".
 
-    def convert_ifindex_to_ifname(self, ifindex):
+    @staticmethod
+    def convert_ifindex_to_ifname(ifindex):
         if not ifindex.isdigit():
             return "None"
         return "%s/%s/%s" % (
@@ -90,140 +168,35 @@ class NokiaSwitch(Switch):
             ((int(ifindex) >> 15) & 0x3f) | ((int(ifindex) >> 17) & 0xc0))
 
     def generate_json(self, interface, lldpout, lsout):
+        vfs_info = self.create_vfs_json(interface, lsout)
 
-        LLDPSYSTEMNAME = "System Name TLV"
-        SYSTEMNAME_RE = LLDPSYSTEMNAME + "\s+(\S+)\s+"
-        LLDPSYSTEMIP = "Management Address TLV"
-        SYSTEMIP_RE = LLDPSYSTEMIP + "\s+\S+:\s+(\S+)\s+"
-        LLDPSYSTEMPORT = "Port ID TLV"
-        SYSTEMPORT_RE = LLDPSYSTEMPORT + "\s+\S+:\s+(\S+)\s+"
+        neighborname, neighborip, neighborport = self.validate_lldp(lldpout)
+        neighborport = self.convert_ifindex_to_ifname(neighborport)
 
-        NEIGHBORNAME = "neighbor-system-name"
-        NEIGHBORIP = "neighbor-system-mgmt-ip"
-        NEIGHBORPORT = "neighbor-system-port"
-        raise_error = False
-
-        # Insert the interface name into the JSON object.
-        parsed = "\n \"name\": \"%s\"" % interface
-
-        # Insert VF port info
-        vf_info = ",\n \"vf_info\": ["
-        lines = lsout.split('\n')
-        found_first_match = False
-        for line in lines:
-            if re.search(" virt", line):
-                fmt = ",\n { \"device-name\": \"%s\""
-                vf_parts = line.split()
-                if len(vf_parts) >= 9:
-                    if not found_first_match:
-                        found_first_match = True
-                        fmt = "\n { \"device-name\": \"%s\""
-                    vf_info += fmt % vf_parts[8]
-                if len(vf_parts) >= 11:
-                    pci_id_parts = vf_parts[10].split('/')
-                    if len(pci_id_parts) >= 2:
-                        vf_info += ", \"pci-id\": \"%s\" }" % pci_id_parts[1]
-        vf_info += "]"
-        parsed += vf_info
-
-        # Now add neighbor information
-        scratch = re.search(SYSTEMNAME_RE, lldpout)
-        if scratch:
-            neighborname = scratch.group(1)
-        else:
-            neighborname = "None"
-            raise_error = True
-        scratch = re.search(SYSTEMIP_RE, lldpout)
-        if scratch:
-            neighborip = scratch.group(1)
-        else:
-            neighborip = "None"
-            raise_error = True
-        scratch = re.search(SYSTEMPORT_RE, lldpout)
-        if scratch:
-            neighborport = self.convert_ifindex_to_ifname(scratch.group(1))
-        else:
-            neighborport = "None"
-            raise_error = True
-
-        if raise_error:
-            raise Exception(neighborname, neighborip, neighborport)
-        parsed += ",\n \"%s\": \"%s\"" % (NEIGHBORNAME, neighborname)
-        parsed += ",\n \"%s\": \"%s\"" % (NEIGHBORIP, neighborip)
-        parsed += ",\n \"%s\": \"%s\" " % (NEIGHBORPORT, neighborport)
-        return "{ %s }" % parsed
+        return self.create_system_json(vfs_info, neighborname,
+                                       neighborip, neighborport)
 
 
 class CiscoSwitch(Switch):
 
     def __init__(self):
-        super(CiscoSwitch, self).__init__()
+        super(CiscoSwitch, self).__init__('cisco')
+
+    @staticmethod
+    def retrieve_port_number(neighborport):
+        scratch = re.search(r'([0-9]+/[0-9]+/[0-9]+)', str(neighborport))
+        if not scratch:
+            return "None"
+        return str(scratch.group(1))
 
     def generate_json(self, interface, lldpout, lsout):
-        LLDPSYSTEMNAME = "System Name TLV"
-        SYSTEMNAME_RE = LLDPSYSTEMNAME + "\s+(\S+)\s+"
-        LLDPSYSTEMIP = "Management Address TLV"
-        SYSTEMIP_RE = LLDPSYSTEMIP + "\s+\S+:\s+(\S+)\s+"
-        LLDPSYSTEMPORT = "Port ID TLV"
-        SYSTEMPORT_RE = LLDPSYSTEMPORT + "\s+\S+:\s+(\S+)\s+"
+        vfs_info = self.create_vfs_json(interface, lsout)
 
-        NEIGHBORNAME = "neighbor-system-name"
-        NEIGHBORIP = "neighbor-system-mgmt-ip"
-        NEIGHBORPORT = "neighbor-system-port"
-        raise_error = False
-
-        # Insert the interface name into the JSON object.
-        parsed = "\n \"name\": \"%s\"" % interface
-
-        # Insert VF port info
-        vf_info = ",\n \"vf_info\": ["
-        lines = lsout.split('\n')
-        found_first_match = False
-        for line in lines:
-            if re.search(" virt", line):
-                fmt = ",\n { \"device-name\": \"%s\""
-                vf_parts = line.split()
-                if len(vf_parts) >= 9:
-                    if not found_first_match:
-                        found_first_match = True
-                        fmt = "\n { \"device-name\": \"%s\""
-                    vf_info += fmt % vf_parts[8]
-                if len(vf_parts) >= 11:
-                    pci_id_parts = vf_parts[10].split('/')
-                    if len(pci_id_parts) >= 2:
-                        vf_info += ", \"pci-id\": \"%s\" }" % pci_id_parts[1]
-        vf_info += "]"
-        parsed += vf_info
-
-        # Now add neighbor information
-        scratch = re.search(SYSTEMNAME_RE, lldpout)
-        if scratch:
-            neighborname = scratch.group(1)
-        else:
-            neighborname = "None"
-            raise_error = True
-        scratch = re.search(SYSTEMIP_RE, lldpout)
-        if scratch:
-            neighborip = scratch.group(1)
-        else:
-            neighborip = "None"
-            raise_error = True
-        scratch = re.search(SYSTEMPORT_RE, lldpout)
-        if scratch:
-            neighborport = str(scratch.group(1))
-            # just get the port number
-            scratch = re.search(r'([0-9]+\/[0-9]+\/[0-9]+)', neighborport)
-            if scratch:
-                neighborport = str(scratch.group(1))
-        else:
-            neighborport = "None"
-            raise_error = True
-        if raise_error:
-            raise Exception(neighborname, neighborip, neighborport)
-        parsed += ",\n \"%s\": \"%s\"" % (NEIGHBORNAME, neighborname)
-        parsed += ",\n \"%s\": \"%s\"" % (NEIGHBORIP, neighborip)
-        parsed += ",\n \"%s\": \"%s\" " % (NEIGHBORPORT, neighborport)
-        return "{ %s }" % parsed
+        neighborname, neighborip, neighborport = self.validate_lldp(lldpout)
+        # just get the port number
+        neighborport = self.retrieve_port_number(neighborport)
+        return self.create_system_json(vfs_info, neighborname,
+                                       neighborip, neighborport)
 
 
 def main():
@@ -254,17 +227,17 @@ def main():
 
     # Determining the switch type from the LLDP output itself
     # Here we can add / support all kind of switches to come
+    switch = None
     if "Nokia" in lldpout:
-        obj = NokiaSwitch()
-        generate_json = obj.generate_json
+        switch = NokiaSwitch()
     elif "Cisco" in lldpout:
-        obj = CiscoSwitch()
-        generate_json = obj.generate_json
+        switch = CiscoSwitch()
     else:
         module.exit_json(msg="No LLDP output was found for this interface",
                          stdout=None)
 
-    lscmd = "%s -la /sys/class/net/%s/device/" % (LS, interface)
+    lscmd = "%s -la --time-style long-iso /sys/class/net/%s/device/" % (
+        LS, interface)
     lsrc, lsout, lserr = module.run_command(lscmd)
 
     if lserr is None:
@@ -275,12 +248,13 @@ def main():
 
     if lldprc != 0:
         lldpout = b('')
+
     json_entry = None
     try:
-        json_entry = generate_json(interface, lldpout, lsout)
+        json_entry = switch.generate_json(interface, lldpout, lsout)
     except Exception as e:
-        module.fail_json(msg="One of the neighbor information is not"
-                             " present in LLDP Output System Name: %s, "
+        module.fail_json(msg="One of the neighbor information is not "
+                             "present in LLDP Output System Name: %s, "
                              "Interface: %s Neighbor Info: %s" % (system_name,
                                                                   interface,
                                                                   e.args),
@@ -298,7 +272,7 @@ def main():
                      lldprc=lldprc,
                      start=str(startd),
                      end=str(datetime.datetime.now()),
-                     delta=str(datetime.datetime.now()-startd),
+                     delta=str(datetime.datetime.now() - startd),
                      changed=True)
 
 
