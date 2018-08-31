@@ -7,4 +7,3 @@
   output_file_prefix: topo_report
   interface_regex: en
   remote_usr: root
-

@@ -1,9 +1,4 @@
 #!/usr/bin/python
-
-from ansible.errors import AnsibleError
-import re
-
-
 # Copyright 2017 Nokia
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -17,6 +12,13 @@ import re
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from ansible.errors import AnsibleError
+import re
+
+
+uuid4hex = re.compile(
+    '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}')
+FINDRE = "\|\s+[0-9]+\s+\|\s+(\S+)\s+\|\s+up\s+\|\s+enabled\s+\|"
 
 
 def osc_env_dict(osc_env_string):
@@ -43,12 +45,15 @@ def hypervisor_hostnames(hstring):
     ''' Given a string representation of the output of "nova hypervisor-list",
     return a list of just the enabled hypervisor hostnames.
     '''
-    FINDRE = "\|\s+[0-9]+\s+\|\s+(\S+)\s+\|\s+up\s+\|\s+enabled\s+\|"
-    nlist = []
-    scratch = re.findall(FINDRE, hstring)
-    for item in scratch:
-        nlist.append(item)
-    return nlist
+    lines = hstring.split('\n')
+    nlists = []
+    for line in lines:
+        if 'enabled' in line and 'up' in line:
+            nlist = uuid4hex.findall(line)
+            if not nlist:
+                nlist = re.findall(FINDRE, line)
+            nlists = nlists + nlist
+    return nlists
 
 
 def hypervisor_names(hstring):
