@@ -1,0 +1,15 @@
+Port deleted : overcloud-SriovPerformanceCompute-0.localdomain, 0000:81:16.23
+
+Port deleted : overcloud-SriovPerformanceCompute-0.localdomain, 0000:81:04.7
+
+Port deleted : overcloud-SriovPerformanceCompute-0.localdomain, 0000:81:0c.2
+
+Port Modified : overcloud-SriovPerformanceCompute-0.localdomain, 0000:81:0c.0
+10.101.2.114, 1/1/6 ===> 10.101.2.114, 1/1/5
+
+New Port added: overcloud-SriovPerformanceCompute-0.localdomain, 0000:81:00.2 ===> 10.101.2.114, 1/1/5
+
+New Port added: overcloud-SriovPerformanceCompute-0.localdomain, 0000:03:03.1 ===> 10.101.2.114, 1/1/8
+
+New Port added: overcloud-SriovPerformanceCompute-0.localdomain, 0000:03:02.0 ===> 10.101.2.114, 1/1/8
+

@@ -28,12 +28,12 @@ if [[ -d %{buildroot} ]];then rm -rf %{buildroot};fi
 mkdir -p  %{buildroot}
 
 %install
-mkdir -p %{buildroot}/opt/nuage/topology-collector
-cp -rf * %{buildroot}/opt/nuage/topology-collector
+mkdir -p %{buildroot}/opt/nuage/topology-collector/nuage_topology_collector
+cp -rf * %{buildroot}/opt/nuage/topology-collector/nuage_topology_collector
 
 %clean
 rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
-/opt/nuage/topology-collector
+/opt/nuage/topology-collector/nuage_topology_collector

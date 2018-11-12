@@ -62,11 +62,11 @@ class Switch(object):
     @staticmethod
     def validate_lldp(lldpout):
         LLDPSYSTEMNAME = "System Name TLV"
-        SYSTEMNAME_RE = LLDPSYSTEMNAME + "\s+(\S+)\s+"
+        SYSTEMNAME_RE = LLDPSYSTEMNAME + r"\s+(\S+)\s+"
         LLDPSYSTEMIP = "Management Address TLV"
-        SYSTEMIP_RE = LLDPSYSTEMIP + "\s+\S+:\s+(\S+)\s+"
+        SYSTEMIP_RE = LLDPSYSTEMIP + r"\s+\S+:\s+(\S+)\s+"
         LLDPSYSTEMPORT = "Port ID TLV"
-        SYSTEMPORT_RE = LLDPSYSTEMPORT + "\s+\S+:\s+(\S+)\s+"
+        SYSTEMPORT_RE = LLDPSYSTEMPORT + r"\s+\S+:\s+(\S+)\s+"
 
         raise_error = False
 
@@ -113,8 +113,8 @@ class Switch(object):
                 vf_parts = line.split("->")
                 vif_info = vf_parts[0].split()[-1]
                 pci_id = vf_parts[-1].split('/')
-                if (vf_info and re.search("virt", vif_info) and
-                        pci_id and len(pci_id) >= 2):
+                if (vf_info and re.search(
+                        "virt", vif_info) and pci_id and len(pci_id) >= 2):
                     if not found_first_match:
                         found_first_match = True
                         fmt = "\n { \"device-name\": \"%s\""

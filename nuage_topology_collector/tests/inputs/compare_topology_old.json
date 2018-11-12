@@ -1,0 +1,30 @@
+[
+{
+    "host_id":"overcloud-SriovPerformanceCompute-0.localdomain",
+    "pci_slot":"0000:81:16.23",
+    "port_id":"1\/1\/6",
+    "id":"01ac0e4a-4a54-448a-b940-7f45c02ebdb4",
+    "switch_id":"10.101.2.114"
+},
+{
+    "host_id":"overcloud-SriovPerformanceCompute-0.localdomain",
+    "pci_slot":"0000:81:04.7",
+    "port_id":"1\/1\/6",
+    "id":"00641fa1-55b9-47ec-ae24-bceceb3a4bb8",
+    "switch_id":"10.101.2.114"
+},
+{
+    "host_id":"overcloud-SriovPerformanceCompute-0.localdomain",
+    "pci_slot":"0000:81:0c.2",
+    "port_id":"1\/1\/6",
+    "id":"06dd50e8-fda6-40db-ab28-8aad3185ccac",
+    "switch_id":"10.101.2.114"
+},
+{
+    "host_id":"overcloud-SriovPerformanceCompute-0.localdomain",
+    "pci_slot":"0000:81:0c.0",
+    "port_id":"1\/1\/6",
+    "id":"01ac0e4a-4a54-448a-b940-7f45c02ebdb4",
+    "switch_id":"10.101.2.114"
+}
+]

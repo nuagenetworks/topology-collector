@@ -18,7 +18,6 @@ import re
 
 uuid4hex = re.compile(
     '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}')
-FINDRE = "\|\s+[0-9]+\s+\|\s+(\S+)\s+\|\s+up\s+\|\s+enabled\s+\|"
 
 
 def osc_env_dict(osc_env_string):
@@ -33,7 +32,7 @@ def osc_env_dict(osc_env_string):
     export OS_USERNAME=admin
     export OS_AUTH_URL="http://10.100.100.20:35357/v3"
     '''
-    PAIR_RE = "export\s+(?P<name>\w+)=(?P<value>\S+)"
+    PAIR_RE = r"export\s+(?P<name>\w+)=(?P<value>\S+)"
     dict = {}
     pairs = re.finditer(PAIR_RE, osc_env_string)
     for pair in pairs:
@@ -45,6 +44,7 @@ def hypervisor_hostnames(hstring):
     ''' Given a string representation of the output of "nova hypervisor-list",
     return a list of just the enabled hypervisor hostnames.
     '''
+    FINDRE = r"\|\s+[0-9]+\s+\|\s+(\S+)\s+\|\s+up\s+\|\s+enabled\s+\|"
     lines = hstring.split('\n')
     nlists = []
     for line in lines:
@@ -62,9 +62,9 @@ def hypervisor_names(hstring):
     suitable for a host inventory file, e.g. 'hostname service_host=shostname'.
     '''
 
-    HYPERHOSTNAMERE = "\|\s+hypervisor_hostname\s+\|\s+(\S+)\s+\|"
-    SERVICEHOSTNAMERE = "\|\s+service_host\s+\|\s+(\S+)\s+\|"
-    HYPERHOSTIPRE = "\|\s+host_ip\s+\|\s+(\S+)\s+\|"
+    HYPERHOSTNAMERE = r"\|\s+hypervisor_hostname\s+\|\s+(\S+)\s+\|"
+    SERVICEHOSTNAMERE = r"\|\s+service_host\s+\|\s+(\S+)\s+\|"
+    HYPERHOSTIPRE = r"\|\s+host_ip\s+\|\s+(\S+)\s+\|"
 
     scratch = ""
 

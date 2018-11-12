@@ -1,0 +1,128 @@
+{
+    "datetime": "2018-11-05@18:35:41",
+    "compute-hosts": [
+
+                {
+    "hypervisor hostname": "overcloud-SriovPerformanceCompute-0",
+    "service_host name": "overcloud-SriovPerformanceCompute-0.localdomain",
+    "interfaces": [
+
+        {
+ "name": "enp129s13f3",
+ "vf_info": [],
+ "neighbor-system-name": "None",
+ "neighbor-system-mgmt-ip": "None",
+ "neighbor-system-port": "None"  },
+
+        {
+ "name": "enp129s13f2",
+ "vf_info": [],
+ "neighbor-system-name": "None",
+ "neighbor-system-mgmt-ip": "None",
+ "neighbor-system-port": "None"  },
+
+        {
+ "name": "ens6f0",
+ "vf_info": [
+ { "device-name": "virtfn0", "pci-id": "0000:81:00.2" },
+ { "device-name": "virtfn94", "pci-id": "0000:81:0c.0" }],
+ "neighbor-system-name": "cas-sf6-014",
+ "neighbor-system-mgmt-ip": "10.101.2.114",
+ "neighbor-system-port": "1/1/5"  },
+
+        {
+ "name": "ens6f6",
+ "vf_info": [],
+ "neighbor-system-name": "None",
+ "neighbor-system-mgmt-ip": "None",
+ "neighbor-system-port": "None"  },
+
+        {
+ "name": "ens3f1",
+ "vf_info": [
+ { "device-name": "virtfn0", "pci-id": "0000:03:02.0" },
+ { "device-name": "virtfn9", "pci-id": "0000:03:03.1" }],
+ "neighbor-system-name": "cas-sf6-014",
+ "neighbor-system-mgmt-ip": "10.101.2.114",
+ "neighbor-system-port": "1/1/8"  },
+
+        {
+ "name": "enp129s5f6",
+ "vf_info": [],
+ "neighbor-system-name": "None",
+ "neighbor-system-mgmt-ip": "None",
+ "neighbor-system-port": "None"  },
+
+        {
+ "name": "enp129s23f6",
+ "vf_info": [],
+ "neighbor-system-name": "None",
+ "neighbor-system-mgmt-ip": "None",
+ "neighbor-system-port": "None"  },
+
+        {
+ "name": "enp129s23f2",
+ "vf_info": [],
+ "neighbor-system-name": "None",
+ "neighbor-system-mgmt-ip": "None",
+ "neighbor-system-port": "None"  },
+
+        {
+ "name": "enp129s19f6",
+ "vf_info": [],
+ "neighbor-system-name": "None",
+ "neighbor-system-mgmt-ip": "None",
+ "neighbor-system-port": "None"  }
+     ]
+},
+
+                {
+    "hypervisor hostname": "overcloud-OvsCompute-0",
+    "service_host name": "overcloud-OvsCompute-0.localdomain",
+    "interfaces": [
+
+        {
+ "name": "ens6f0",
+ "vf_info": [],
+ "neighbor-system-name": "cas-sf6-014",
+ "neighbor-system-mgmt-ip": "10.101.2.114",
+ "neighbor-system-port": "1/1/9"  },
+
+        {
+ "name": "ens6f1",
+ "vf_info": [],
+ "neighbor-system-name": "cas-sf6-014",
+ "neighbor-system-mgmt-ip": "10.101.2.114",
+ "neighbor-system-port": "1/1/10"  }
+     ]
+},
+
+                {
+    "hypervisor hostname": "overcloud-AvrsReadyCompute-0",
+    "service_host name": "overcloud-AvrsReadyCompute-0.localdomain",
+    "interfaces": [
+
+        {
+ "name": "ens6f0",
+ "vf_info": [],
+ "neighbor-system-name": "None",
+ "neighbor-system-mgmt-ip": "None",
+ "neighbor-system-port": "None"  },
+
+        {
+ "name": "ens6f1",
+ "vf_info": [],
+ "neighbor-system-name": "None",
+ "neighbor-system-mgmt-ip": "None",
+ "neighbor-system-port": "None"  },
+
+        {
+ "name": "tenant-bond",
+ "vf_info": [],
+ "neighbor-system-name": "None",
+ "neighbor-system-mgmt-ip": "None",
+ "neighbor-system-port": "None"  }
+     ]
+}
+    ]
+}

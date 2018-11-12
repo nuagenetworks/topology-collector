@@ -11,16 +11,15 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-import argparse
-import getpass
 import json
 import logging
+import os
+import sys
 
-from keystoneauth1 import identity
-from keystoneauth1 import session
-from neutronclient.v2_0 import client as neutron_client
-
-from utils import script_logging
+from helper import constants
+from helper import script_logging
+from helper.osclient import NeutronClient
+from helper.utils import Utils
 
 script_name = 'topology_import'
 LOG = logging.getLogger(script_name)
@@ -98,37 +97,8 @@ class TopologyConverter(object):
         return {'pci_slot': virtual_function['pci-id']}
 
 
-def init_arg_parser():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--keystone-auth-url', action='store',
-                        dest='auth_url', required=True,
-                        default='http://127.0.0.1/identity',
-                        help='The auth url of the keystone service')
-    parser.add_argument('--username', action='store', required=True,
-                        help='The username to authenticate with keystone')
-    parser.add_argument('--password', action='store',
-                        default=None,
-                        help='The password to authenticate with keystone')
-
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('--project-name', action='store',
-                       help='[v3] The keystone project name')
-    group.add_argument('--tenant-name', action='store',
-                       dest='project_name',
-                       help='[v2] The keystone tenant name')
-
-    parser.add_argument('--user-domain-id', action='store',
-                        help='[v3] The keystone user domain id')
-    parser.add_argument('--project-domain-id', action='store',
-                        help='[v3] The keystone project domain id')
-
-    parser.add_argument('topology_file', action='store',
-                        help='The path to the topology json file.')
-    return parser
-
-
 @script_logging.step(description="importing topology")
-def import_interfaces(neutronclient, reader, converter):
+def import_interfaces(reader, converter):
     global compute_host_name, interface_of_compute_with_error
     for interface in reader.interfaces():
         with script_logging.indentation():
@@ -140,9 +110,8 @@ def import_interfaces(neutronclient, reader, converter):
                               {'switchport_mapping': switchport_mapping})
 
                 try:
-                    neutronclient.post(
-                        '/net-topology/switchport_mappings',
-                        body={'switchport_mapping': switchport_mapping})
+                    body = {'switchport_mapping': switchport_mapping}
+                    converter.neutron.create_switchport_mapping(body)
                     LOG.debug("Successfully imported the SwitchPort Mapping")
                 except Exception as e:
                     with script_logging.indentation():
@@ -179,32 +148,38 @@ def import_interfaces(neutronclient, reader, converter):
     LOG.user("Complete!! Please check the log file for Summary")
 
 
-def main():
-    parser = init_arg_parser()
-    args = parser.parse_args()
+def main(argv):
+
+    if len(sys.argv) != 2:
+        sys.stdout.write("ERROR: Please pass the new report as an argument.\n")
+        sys.exit(1)
 
     if not script_logging.log_file:
         script_logging.init_logging(script_name)
 
-    password = args.password or getpass.getpass('Enter password for user %s:'
-                                                % args.username)
-    is_v3 = args.project_name is not None
-    identity_args = {'auth_url': args.auth_url,
-                     'username': args.username,
-                     'password': password,
-                     'project_name': args.project_name}
-    if is_v3:
-        identity_args['project_domain_id'] = args.project_domain_id
-        identity_args['user_domain_id'] = args.user_domain_id
+    if not os.path.exists(argv[1]):
+        sys.stdout.write("ERROR: The report %s does not exist. \n" % argv[1])
+        sys.exit(1)
 
-    auth = identity.Password(**identity_args)
-    sess = session.Session(auth=auth)
-    neutronclient = neutron_client.Client(retries=2, session=sess)
+    if not Utils.check_user(constants.STACK_USER):
+        sys.stdout.write("ERROR: Run the script as %s "
+                         "user.\n" % constants.STACK_USER)
+        sys.exit(1)
 
-    reader = TopologyReader(args.topology_file)
-    converter = TopologyConverter(neutronclient)
-    import_interfaces(neutronclient, reader, converter)
+    if not os.path.isfile(constants.OVERCLOUDRC_FILE):
+        sys.stdout.write("ERROR: %s does not exist."
+                         "\n" % constants.OVERCLOUDRC_FILE)
+        sys.exit(1)
+
+    Utils.source_rc_files(constants.OVERCLOUDRC_FILE)
+
+    neutron_client = NeutronClient()
+    neutron_client.authenticate()
+
+    reader = TopologyReader(argv[1])
+    converter = TopologyConverter(neutron_client)
+    import_interfaces(reader, converter)
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv)

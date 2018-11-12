@@ -16,6 +16,40 @@ The output of the code is a JSON report.
 5. Execute `ansible-playbook -i controllers get_hypervisors.yml` (Skip if you hand-edit `hypervisors` or you have already run this step previously and no changes in the list of compute nodes are required.)
 6. Execute `ansible-playbook -i hypervisors get_topo.yml`
 
+## Automation instructions
+
+1. Modify “remote_usr” and "osc_env_file" in "/opt/nuage/topology-collector/nuage_topology_collector/user_vars.yml" to the corresponding overcloud user and path of the overcloudrc file.
+   Example =>
+
+```
+remote_usr: heat-admin
+osc_env_file: /home/stack/overcloudrc
+```
+
+2. Switch to stack user on the Undercloud.
+
+`
+su - stack
+`
+
+3. Generate the topology report using the following command:
+
+`
+python /opt/nuage/topology-collector/nuage_topology_collector/scripts/generate_topology.py
+`
+
+4. Compare the existing topology with the newly generated report:
+
+```
+python /opt/nuage/topology-collector/nuage_topology_collector/scripts/compare_topology.py `ls -t /tmp/topo-coll/reports/topo_report*json | head -1`
+```
+
+5. Populate neutron with the generated topology:
+
+`
+python /opt/nuage/topology-collector/nuage_topology_collector/scripts/populate_topology.py
+`
+
 ## Details
 
 ### Assumptions
@@ -256,7 +290,7 @@ bash build/build_nuage_deb.sh
 
 to build el7 packages, just run
 ```
-build build_nuage_rpm.sh
+bash build/build_nuage_rpm.sh
 ```
 
 This package requires ansible >= 2.1.0 as dependency
@@ -283,7 +317,7 @@ or
 sudo yum localinstall nuage-topology-collector*
 ```
 
-the content of this package is under `/opt/nuage/topology-collector`
+the content of this package is under `/opt/nuage/topology-collector/nuage_topology_collector`
 
 Example Output of LLDP command on WBX
 
