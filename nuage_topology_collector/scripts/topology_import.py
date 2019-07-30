@@ -142,7 +142,7 @@ def import_interfaces(reader, converter):
                 LOG.debug("Interface Name: %s" % interface_name)
                 with script_logging.indentation():
                     for mapping in switchport_mapping:
-                            LOG.debug("SwitchPort Mapping: %s" % mapping)
+                        LOG.debug("SwitchPort Mapping: %s" % mapping)
 
     LOG.debug("\n")
     LOG.user("Complete!! Please check the log file for Summary")
