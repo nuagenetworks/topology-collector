@@ -184,10 +184,10 @@ class CiscoSwitch(Switch):
 
     @staticmethod
     def retrieve_port_number(neighborport):
-        scratch = re.search(r'([0-9]+/[0-9]+/[0-9]+)', str(neighborport))
+        scratch = re.search(r'(\w+)([0-9]+(/[0-9]+)*)', str(neighborport))
         if not scratch:
             return "None"
-        return str(scratch.group(1))
+        return str(scratch.group(1)[0:3].lower() + scratch.group(2))
 
     def generate_json(self, interface, lldpout, lsout):
         vfs_info = self.create_vfs_json(interface, lsout)

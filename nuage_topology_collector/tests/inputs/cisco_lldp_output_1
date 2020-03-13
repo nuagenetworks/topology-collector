@@ -1,13 +1,13 @@
 Chassis ID TLV
 MAC: 10:05:ca:f4:f2:bd
 Port ID TLV
-Ifname: Ethernet1/2/2
+Ifname: Ethernet1/2/3
 Time to Live TLV
 120
 Port Description TLV
-Ethernet1/2/2
+Ethernet1/2/3
 System Name TLV
-cisco_ovsdb
+cisco-nexus
 System Description TLV
 Cisco Nexus Operating System (NX-OS) Software 7.0(3)I7(1)
 TAC support: http://www.cisco.com/tac

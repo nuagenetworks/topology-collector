@@ -1,0 +1,31 @@
+Chassis ID TLV
+MAC: 10:05:ca:f4:f2:bd
+Port ID TLV
+Ifname: Ethernet1/2
+Time to Live TLV
+120
+Port Description TLV
+Ethernet1/2
+System Name TLV
+cisco-nexus
+System Description TLV
+Cisco Nexus Operating System (NX-OS) Software 7.0(3)I7(1)
+TAC support: http://www.cisco.com/tac
+Copyright (c) 2002-2017, Cisco Systems, Inc. All rights reserved.
+System Capabilities TLV
+System capabilities:  Bridge, Router
+Enabled capabilities: Bridge, Router
+Management Address TLV
+IPv4: 135.227.145.246
+Ifindex: 83886080
+Cisco 4-wire Power-via-MDI TLV
+4-Pair PoE supported
+Spare pair Detection/Classification not required
+PD Spare pair Desired State: Disabled
+PSE Spare pair Operational State: Disabled
+Port VLAN ID TLV
+PVID: 1
+Management Address TLV
+MAC: 10:05:ca:f4:f2:bd
+Ifindex: 83886080
+End of LLDPDU TLV
