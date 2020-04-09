@@ -28,7 +28,8 @@ def get_hypervisors():
         nova_client.authenticate()
         oc_hypervisor_list = nova_client.get_hypervisor_list()
         for hypervisor in oc_hypervisor_list:
-            hypervisor_list[hypervisor.hypervisor_hostname] = hypervisor
+            hypervisor_list[
+                hypervisor.hypervisor_hostname.split('.')[0]] = hypervisor
     finally:
         os.environ.clear()
         os.environ.update(_environ)
@@ -38,9 +39,9 @@ def get_hypervisors():
         nova_client.authenticate()
         uc_server_list = nova_client.get_server_list()
         for server in uc_server_list:
-            if server.name + ".localdomain" in hypervisor_list.keys():
-                hypervisor_list[server.name + ".localdomain"].host_ip =\
-                    server.networks['ctlplane'][0]
+            if server.name in hypervisor_list.keys():
+                hypervisor_list[
+                    server.name].host_ip = server.networks['ctlplane'][0]
     finally:
         os.environ.clear()
         os.environ.update(_environ)
