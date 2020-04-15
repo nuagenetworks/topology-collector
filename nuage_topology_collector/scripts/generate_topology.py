@@ -14,46 +14,50 @@
 
 import os
 import sys
+
 from helper.utils import Utils
 from helper import constants
 
 
-def get_hypervisors():
+def get_nova_client(rc_file):
     from helper.osclient import NovaClient
-    hypervisor_list = {}
     _environ = dict(os.environ)
     try:
-        Utils.source_rc_files(constants.OVERCLOUDRC_FILE)
+        Utils.source_rc_files(rc_file)
         nova_client = NovaClient()
         nova_client.authenticate()
-        oc_hypervisor_list = nova_client.get_hypervisor_list()
-        for hypervisor in oc_hypervisor_list:
-            hypervisor_list[
-                hypervisor.hypervisor_hostname.split('.')[0]] = hypervisor
+        return nova_client
     finally:
         os.environ.clear()
         os.environ.update(_environ)
-    try:
-        Utils.source_rc_files(constants.STACKRC_FILE)
-        nova_client = NovaClient()
-        nova_client.authenticate()
-        uc_server_list = nova_client.get_server_list()
-        for server in uc_server_list:
-            if server.name in hypervisor_list.keys():
-                hypervisor_list[
-                    server.name].host_ip = server.networks['ctlplane'][0]
-    finally:
-        os.environ.clear()
-        os.environ.update(_environ)
-    hypervisor_inventory = open("%s" % constants.HYPERVISOR_FILE, "w+")
-    hypervisor_inventory.write("[hypervisors]\n")
-    for hypervisor in hypervisor_list.values():
-        hypervisor_inventory.write("%s hostname=%s service_host=%s\n" % (
-            hypervisor.host_ip, hypervisor.hypervisor_hostname,
-            hypervisor.service["host"]
-        ))
 
-    hypervisor_inventory.close()
+
+def get_hypervisors():
+    hypervisors = {}
+    # overcloud hypervisors
+    for hypervisor in get_nova_client(
+            constants.OVERCLOUDRC_FILE).get_hypervisor_list():
+        hypervisors[
+            hypervisor.hypervisor_hostname.split('.')[0]] = hypervisor
+    # undercloud vm instances (servers)
+    for server in get_nova_client(
+            constants.STACKRC_FILE).get_server_list():
+        if server.name in hypervisors.keys():
+            # when match, add the (1st) host ip to the hypervisor dict value
+            hypervisors[
+                server.name].host_ip = server.networks['ctlplane'][0]
+    return hypervisors
+
+
+def dump_hypervisors(file_name, hypervisors):
+    with open(file_name, "w+") as hypervisor_inventory:
+        hypervisor_inventory.write("[hypervisors]\n")
+        for hypervisor in hypervisors.values():
+            hypervisor_inventory.write("%s hostname=%s service_host=%s\n" % (
+                hypervisor.host_ip, hypervisor.hypervisor_hostname,
+                hypervisor.service["host"]
+            ))
+
     Utils.cmds_run(
         ["sudo mv %s /opt/nuage/topology-collector/"
          "nuage_topology_collector/" % constants.HYPERVISOR_FILE]
@@ -76,7 +80,9 @@ def main():
                          "\n" % constants.OVERCLOUDRC_FILE)
         sys.exit(1)
 
-    get_hypervisors()
+    hypervisors = get_hypervisors()
+    dump_hypervisors(constants.HYPERVISOR_FILE, hypervisors)
+
     Utils.cmds_run(["cd /opt/nuage/topology-collector/"
                     "nuage_topology_collector; "
                     "ansible-playbook -i ./hypervisors get_topo.yml"])

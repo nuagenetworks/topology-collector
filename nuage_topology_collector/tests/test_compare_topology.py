@@ -1,14 +1,19 @@
 #!/usr/bin/env python
 
-from cStringIO import StringIO
+try:
+    from StringIO import StringIO  # for Python 2
+except ImportError:
+    from io import StringIO  # for Python 3
+
 import filecmp
 import json
 import mock
-from nuage_topology_collector.scripts import compare_topology
-from nuage_topology_collector.scripts.helper.utils import Utils
 import os
 import sys
 import testtools
+
+from nuage_topology_collector.scripts import compare_topology
+from nuage_topology_collector.scripts.helper.utils import Utils
 
 TESTS_PATH = 'nuage_topology_collector/tests/'
 INPUTS_PATH = TESTS_PATH + 'inputs/'
@@ -57,10 +62,9 @@ class CompareTopology(testtools.TestCase):
 
         with Capturing() as output:
             compare_topology.main([self, new_report_path])
-        generated_output = open(mock_generated_output_path, 'w')
-        for line in output:
-            generated_output.write(line + "\n")
-        generated_output.close()
+        with open(mock_generated_output_path, 'w') as generated_output:
+            for line in output:
+                generated_output.write(line + "\n")
         self.assertTrue(filecmp.cmp(mock_generated_output_path,
                                     mock_expected_output_path),
                         'The output does not match the expected output')
