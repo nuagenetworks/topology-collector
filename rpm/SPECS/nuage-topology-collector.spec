@@ -21,6 +21,7 @@ Ansible playbooks collects the following information about interfaces on compute
 The output of the code is a JSON report.
 
 %prep
+
 %setup -q
 
 %build
@@ -35,5 +36,5 @@ cp -rf * %{buildroot}/opt/nuage/topology-collector/nuage_topology_collector
 rm -rf %{buildroot}
 
 %files
-%defattr(-,root,root,-)
+%defattr(755,stack,stack,-)
 /opt/nuage/topology-collector/nuage_topology_collector

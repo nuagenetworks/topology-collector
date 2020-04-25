@@ -21,6 +21,7 @@ from helper import script_logging
 from helper.osclient import NeutronClient
 from helper.utils import Utils
 
+
 script_name = 'topology_import'
 LOG = logging.getLogger(script_name)
 interface_of_compute_with_error = {}
@@ -120,19 +121,19 @@ def import_interfaces(reader, converter):
                             "switchport_mapping": switchport_mapping,
                             "interface": interface["name"]
                         }
-                        LOG.user("Failed to import SwitchPort Mapping:"
-                                 " %(switchport_mapping)s" % msg_arg,
-                                 exc_info=True)
-                        LOG.user("ERROR: %(error_msg)s" % msg_arg)
+                        LOG.debug("Failed to import SwitchPort Mapping:"
+                                  "%(switchport_mapping)s" % msg_arg,
+                                  exc_info=True)
+                        LOG.debug("ERROR: %(error_msg)s" % msg_arg)
                         mapping.append(switchport_mapping)
                     interface_of_compute_with_error.update({
                         (compute_host_name, interface["name"]): mapping})
 
     LOG.debug("\n")
     LOG.debug("-----------------")
-    LOG.debug("  Failure Summary")
+    LOG.debug("  Failure summary")
     LOG.debug("-------------------")
-    LOG.debug("Errors Occured in:")
+    LOG.debug("Errors occurred in:")
 
     for (compute_name, interface_name), switchport_mapping in \
             interface_of_compute_with_error.iteritems():
@@ -145,12 +146,13 @@ def import_interfaces(reader, converter):
                         LOG.debug("SwitchPort Mapping: %s" % mapping)
 
     LOG.debug("\n")
-    LOG.user("Complete!! Please check the log file for Summary")
+    log_dir = os.path.expanduser('~') + '/nuage_logs'
+    LOG.user("Complete!! Please check the log file %s for summary" % log_dir)
 
 
 def main(argv):
 
-    if len(sys.argv) != 2:
+    if len(argv) != 2:
         sys.stdout.write("ERROR: Please pass the new report as an argument.\n")
         sys.exit(1)
 
