@@ -1,4 +1,4 @@
-# Copyright 2017 NOKIA
+# Copyright 2020 NOKIA
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -15,8 +15,9 @@
 import os
 import sys
 
-from helper.utils import Utils
 from helper import constants
+from helper.utils import Utils
+from helper.utils import run_ansible
 
 
 def get_nova_client(rc_file):
@@ -58,11 +59,6 @@ def dump_hypervisors(file_name, hypervisors):
                 hypervisor.service["host"]
             ))
 
-    Utils.cmds_run(
-        ["sudo mv %s /opt/nuage/topology-collector/"
-         "nuage_topology_collector/" % constants.HYPERVISOR_FILE]
-    )
-
 
 def main():
     if not Utils.check_user(constants.STACK_USER):
@@ -81,11 +77,11 @@ def main():
         sys.exit(1)
 
     hypervisors = get_hypervisors()
-    dump_hypervisors(constants.HYPERVISOR_FILE, hypervisors)
-
-    Utils.cmds_run(["cd /opt/nuage/topology-collector/"
-                    "nuage_topology_collector; "
-                    "ansible-playbook -i ./hypervisors get_topo.yml"])
+    hypervisor_file_path = os.path.join(constants.NUAGE_TC_PATH,
+                                        "hypervisors")
+    dump_hypervisors(hypervisor_file_path, hypervisors)
+    topo_playbook_path = os.path.join(constants.NUAGE_TC_PATH, "get_topo.yml")
+    run_ansible(hypervisor_file_path, topo_playbook_path)
 
 
 if __name__ == "__main__":
