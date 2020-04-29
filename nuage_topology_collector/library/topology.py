@@ -18,6 +18,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import b
 import re
 from abc import abstractmethod
+
 DOCUMENTATION = '''
 ---
 module: topology
@@ -144,28 +145,73 @@ class NokiaSwitch(Switch):
 
     # convert_ifindex_to_ifname() is a function that converts the ifindex
     # we get from the Port ID TLV output of lldptool into the ifname
-    # of the form x/y/z.
-    # ifindex is a string that represents an integer, e.g. "37781504".
-    # High Port Count format:
-    # 32 bits unsigned integer, from most significant to least significant:
-    #   3 bits: 000 -> indicates physical port
-    #   4 bits: slot number
-    #   2 bits: High part of port number
-    #   2 bits: mda number
-    #   6 bits: Low part of port number
-    #  15 bits: channel number
-    # High and low part of port number need to be combined to create 8 bit
-    # unsigned int
-    # If ifindex does not represent an int we return "None".
+    # of the form x/y/z
+    # The following schemes are supported:
+    # 32 bit unsigned integer
+    # Scheme B
+    # None-connector 0110|Zero(5)|Slot(5)|MDA(4)|0|Zero(2)|Port(8)|Zero(3)
+    # Connector 0110|Zero(5)|Slot(5)|MDA(4)|1|Zero(1)|Conn(6)|ConnPort(6)
+    # Scheme C
+    # None-connector 000|Slot(4)|Port-Hi(2)|MDA(2)|Port-Lo(6)|0|Zero(14)
+    # Connector 000|Slot(4)|Zero(2)|MDA(2)|Conn(6)|1|Zero(8)|ConnPort(6)
+    # Scheme D
+    # None-connector 0x4D|isChannel(1)|0|slot(3)|mda(4)|0|0|Zero(5)|Port(8)
+    # Connector 0x4D|isChannel(1)|0|slot(3)|mda(4)|0|1|0|Conn(6)|ConnPort(6)
+
+    def convert_ifindex_to_ifname(self, ifindex):
+        if not ifindex.isdigit():
+            return 'None'
+
+        ifindex = int(ifindex)
+        scheme, connector = self._get_scheme_decode_format(ifindex)
+        # Scheme B
+        if scheme == 3:
+            slot = (ifindex >> 18) & 0x1f
+            mda = (ifindex >> 14) & 0x0f
+            if connector:
+                return "%s/%s/c%s/%s" % (
+                    slot, mda,
+                    (ifindex >> 6) & 0x3f,
+                    ifindex & 0x3f)
+            else:
+                return "%s/%s/%s" % (
+                    slot, mda,
+                    (ifindex >> 3) & 0xff)
+        # Scheme C
+        elif scheme == 0:
+            slot = ifindex >> 25
+            mda = (ifindex >> 21) & 0x03
+            if connector:
+                return "%s/%s/c%s/%s" % (
+                    slot, mda,
+                    (ifindex >> 15) & 0x3f,
+                    ifindex & 0x3f)
+            else:
+                return "%s/%s/%s" % (
+                    slot, mda,
+                    (ifindex >> 15) & 0x3f | (ifindex >> 17) & 0xc0)
+        # Scheme D
+        elif scheme == 2:
+            slot = (ifindex >> 19) & 0x07
+            mda = (ifindex >> 15) & 0x0f
+            if connector:
+                return "%s/%s/c%s/%s" % (
+                    slot, mda,
+                    (ifindex >> 6) & 0x3f,
+                    ifindex & 0x3f)
+            else:
+                return "%s/%s/%s" % (
+                    slot, mda,
+                    ifindex & 0xff)
+        else:
+            return 'None'
 
     @staticmethod
-    def convert_ifindex_to_ifname(ifindex):
-        if not ifindex.isdigit():
-            return "None"
-        return "%s/%s/%s" % (
-            (int(ifindex) >> 25),
-            (int(ifindex) >> 21) & 0x3,
-            ((int(ifindex) >> 15) & 0x3f) | ((int(ifindex) >> 17) & 0xc0))
+    def _get_scheme_decode_format(ifindex):
+        scheme = ifindex >> 29
+        # Connector Bit - Masks 16384 (Scheme C) & 8192 (Scheme B,D)
+        connector = ifindex & 16384 if not scheme else ifindex & 8192
+        return scheme, connector
 
     def generate_json(self, interface, lldpout, lsout):
         vfs_info = self.create_vfs_json(interface, lsout)
