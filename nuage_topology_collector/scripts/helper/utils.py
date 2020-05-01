@@ -1,4 +1,4 @@
-# Copyright 2017 NOKIA
+# Copyright 2020 NOKIA
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -12,6 +12,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from ansible.parsing.dataloader import DataLoader
+from ansible.vars.manager import VariableManager
+from ansible.inventory.manager import InventoryManager
+from ansible.executor.playbook_executor import PlaybookExecutor
+from collections import namedtuple
 import getpass
 import os
 from oslo_utils import uuidutils
@@ -161,7 +166,6 @@ class Utils(object):
                 if output == '' and proc.poll() is not None:
                     break
                 if output:
-                    sys.stdout.write(output)
                     out = out + output
             proc.poll()
             if proc.returncode and err and err.split():
@@ -175,3 +179,38 @@ class Utils(object):
             return output_list[0]
         else:
             return output_list
+
+
+def run_ansible(hypervisor_file_path, ansible_playbook_path):
+    loader = DataLoader()
+    inventory = InventoryManager(loader=loader,
+                                 sources=[hypervisor_file_path])
+    variable_manager = VariableManager(loader=loader,
+                                       inventory=inventory)
+    passwords = {}
+    Options = namedtuple(
+        'Options',
+        [
+            'listtags', 'listtasks', 'listhosts', 'syntax', 'connection',
+            'module_path', 'forks', 'remote_user', 'private_key_file',
+            'ssh_common_args', 'ssh_extra_args', 'sftp_extra_args',
+            'scp_extra_args', 'become', 'become_method', 'become_user',
+            'verbosity', 'check', 'diff'])
+    options = Options(
+        listtags=False, listtasks=False, listhosts=False,
+        syntax=False, connection='ssh', module_path=None, forks=100,
+        remote_user='slotlocker', private_key_file=None,
+        ssh_common_args=None, ssh_extra_args=None,
+        sftp_extra_args=None, scp_extra_args=None, become=False,
+        become_method='sudo', become_user='root', verbosity=None,
+        check=False, diff=False)
+
+    playbook = PlaybookExecutor(
+        playbooks=[ansible_playbook_path], inventory=inventory,
+        variable_manager=variable_manager, loader=loader,
+        options=options, passwords=passwords)
+    rc = playbook.run()
+    if rc == 0:
+        sys.stdout.write("\n Running Ansible Completed !! \n")
+    else:
+        sys.stdout.write("\n Running Ansible seems to have some error !! \n")
