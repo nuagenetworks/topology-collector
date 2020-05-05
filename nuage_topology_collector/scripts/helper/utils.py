@@ -16,7 +16,7 @@ from ansible.parsing.dataloader import DataLoader
 from ansible.vars.manager import VariableManager
 from ansible.inventory.manager import InventoryManager
 from ansible.executor.playbook_executor import PlaybookExecutor
-from collections import namedtuple
+
 import getpass
 import os
 from oslo_utils import uuidutils
@@ -161,8 +161,8 @@ class Utils(object):
             out = ""
             err = ""
             while True:
-                output = proc.stdout.readline()
-                err = err + proc.stderr.readline()
+                output = proc.stdout.readline().decode()
+                err = err + proc.stderr.readline().decode()
                 if output == '' and proc.poll() is not None:
                     break
                 if output:
@@ -188,27 +188,47 @@ def run_ansible(hypervisor_file_path, ansible_playbook_path):
     variable_manager = VariableManager(loader=loader,
                                        inventory=inventory)
     passwords = {}
-    Options = namedtuple(
-        'Options',
-        [
-            'listtags', 'listtasks', 'listhosts', 'syntax', 'connection',
-            'module_path', 'forks', 'remote_user', 'private_key_file',
-            'ssh_common_args', 'ssh_extra_args', 'sftp_extra_args',
-            'scp_extra_args', 'become', 'become_method', 'become_user',
-            'verbosity', 'check', 'diff'])
-    options = Options(
-        listtags=False, listtasks=False, listhosts=False,
-        syntax=False, connection='ssh', module_path=None, forks=100,
-        remote_user='slotlocker', private_key_file=None,
-        ssh_common_args=None, ssh_extra_args=None,
-        sftp_extra_args=None, scp_extra_args=None, become=False,
-        become_method='sudo', become_user='root', verbosity=None,
-        check=False, diff=False)
+    # Since ansible has deprecated the options and introduced
+    # new library context starting from 2.8
+    try:
+        from ansible import context
+        from ansible.module_utils.common.collections import ImmutableDict
+        context.CLIARGS = ImmutableDict(
+            listtags=False, listtasks=False, listhosts=False,
+            syntax=False, connection='smart', module_path=None, forks=100,
+            remote_user='slotlocker', timeout=10, become=False,
+            become_ask_pass=False, ask_pass=False, become_method='sudo',
+            become_user='root', verbosity=0, check=False, diff=False,
+            step=False, start_at_task=None)
+        playbook = PlaybookExecutor(
+            playbooks=[ansible_playbook_path], inventory=inventory,
+            variable_manager=variable_manager, loader=loader,
+            passwords=passwords)
+    except (ImportError, ValueError):
+        from collections import namedtuple
+        Options = namedtuple(
+            'Options',
+            [
+                'listtags', 'listtasks', 'listhosts', 'syntax', 'connection',
+                'module_path', 'forks', 'remote_user', 'private_key_file',
+                'ssh_common_args', 'ssh_extra_args', 'sftp_extra_args',
+                'scp_extra_args', 'become', 'become_method', 'become_user',
+                'verbosity', 'check', 'diff'])
 
-    playbook = PlaybookExecutor(
-        playbooks=[ansible_playbook_path], inventory=inventory,
-        variable_manager=variable_manager, loader=loader,
-        options=options, passwords=passwords)
+        options = Options(
+            listtags=False, listtasks=False, listhosts=False,
+            syntax=False, connection='ssh', module_path=None, forks=100,
+            remote_user='slotlocker', private_key_file=None,
+            ssh_common_args=None, ssh_extra_args=None,
+            sftp_extra_args=None, scp_extra_args=None, become=False,
+            become_method='sudo', become_user='root', verbosity=0,
+            check=False, diff=False)
+
+        playbook = PlaybookExecutor(
+            playbooks=[ansible_playbook_path], inventory=inventory,
+            variable_manager=variable_manager, loader=loader,
+            options=options, passwords=passwords)
+
     rc = playbook.run()
     if rc == 0:
         sys.stdout.write("\n Running Ansible Completed !! \n")

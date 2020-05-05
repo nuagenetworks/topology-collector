@@ -1,16 +1,14 @@
-#!/usr/bin/env python
-
-try:
-    from StringIO import StringIO  # for Python 2
-except ImportError:
-    from io import StringIO  # for Python 3
-
 import filecmp
 import json
 import mock
 import os
 import sys
 import testtools
+
+try:
+    from StringIO import StringIO  # for Python 2
+except ImportError:
+    from io import StringIO  # for Python 3
 
 from nuage_topology_collector.scripts import compare_topology
 from nuage_topology_collector.scripts.helper.utils import Utils

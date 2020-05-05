@@ -11,5 +11,3 @@ New Port added: overcloud-SriovPerformanceCompute-0.localdomain, 0000:81:00.2 ==
 
 New Port added: overcloud-SriovPerformanceCompute-0.localdomain, 0000:03:03.1 ===> 10.101.2.114, 1/1/8
 
-New Port added: overcloud-SriovPerformanceCompute-0.localdomain, 0000:03:02.0 ===> 10.101.2.114, 1/1/8
-

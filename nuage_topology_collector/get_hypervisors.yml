@@ -1,6 +1,0 @@
----
-- hosts: controllers
-  gather_facts: no
-  vars_files: ["user_vars.yml"]
-  roles:
-    - get-hypervisors

@@ -15,13 +15,29 @@
 import os
 import sys
 
-from helper import constants
-from helper.utils import Utils
-from helper.utils import run_ansible
+# TODO(OPENSTACK-2892) :
+#      This is temporary code for dealing with py2/py3 compatibility and have
+#      unit tests pass, while the production code isn't deployed as a true
+#      python package. This will be worked on in a subsequent release.
+try:
+    from .helper import constants
+    from .helper.utils import Utils
+    from .helper.utils import run_ansible
+except (ImportError, ValueError):
+    from helper import constants
+    from helper.utils import Utils
+    from helper.utils import run_ansible
 
 
 def get_nova_client(rc_file):
-    from helper.osclient import NovaClient
+    # TODO(OPENSTACK-2892) :
+    #      This is temporary code for dealing with py2/py3 compatibility and
+    #      have unit tests pass, while the production code isn't deployed as a
+    #      true python package. This will be worked on in a subsequent release.
+    try:
+        from .helper.osclient import NovaClient
+    except (ImportError, ValueError):
+        from helper.osclient import NovaClient
     _environ = dict(os.environ)
     try:
         Utils.source_rc_files(rc_file)

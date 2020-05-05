@@ -2,12 +2,28 @@ import json
 import os
 import sys
 
-from helper import constants
-from helper.utils import Utils
+# TODO(OPENSTACK-2892) :
+#      This is temporary code for dealing with py2/py3 compatibility and have
+#      unit tests pass, while the production code isn't deployed as a true
+#      python package. This will be worked on in a subsequent release.
+try:
+    from .helper import constants
+    from .helper.utils import Utils
+except (ImportError, ValueError):
+    from helper import constants
+    from helper.utils import Utils
 
 
 def create_old_report():
-    from helper.osclient import NeutronClient
+    # TODO(OPENSTACK-2892) :
+    #      This is temporary code for dealing with py2/py3 compatibility and
+    #      have unit tests pass, while the production code isn't deployed as a
+    #      true python package. This will be worked on in a subsequent release.
+    try:
+        from .helper.osclient import NeutronClient
+    except (ImportError, ValueError):
+        from helper.osclient import NeutronClient
+
     neutron_client = NeutronClient()
     neutron_client.authenticate()
     sw_maps = neutron_client.get_switchport_mapping()
