@@ -16,10 +16,20 @@ import logging
 import os
 import sys
 
-from helper import constants
-from helper import script_logging
-from helper.osclient import NeutronClient
-from helper.utils import Utils
+# TODO(OPENSTACK-2892) :
+#      This is temporary code for dealing with py2/py3 compatibility and have
+#      unit tests pass, while the production code isn't deployed as a true
+#      python package. This will be worked on in a subsequent release.
+try:
+    from .helper import constants
+    from .helper import script_logging
+    from .helper.osclient import NeutronClient
+    from .helper.utils import Utils
+except (ImportError, ValueError):
+    from helper import constants
+    from helper import script_logging
+    from helper.osclient import NeutronClient
+    from helper.utils import Utils
 
 
 script_name = 'topology_import'
@@ -136,7 +146,7 @@ def import_interfaces(reader, converter):
     LOG.debug("Errors occurred in:")
 
     for (compute_name, interface_name), switchport_mapping in \
-            interface_of_compute_with_error.iteritems():
+            interface_of_compute_with_error.items():
         with script_logging.indentation():
             LOG.debug("Compute Host %s" % compute_name)
             with script_logging.indentation():

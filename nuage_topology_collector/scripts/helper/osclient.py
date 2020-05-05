@@ -1,4 +1,11 @@
-from utils import Utils
+# TODO(OPENSTACK-2892) :
+#      This is temporary code for dealing with py2/py3 compatibility and have
+#      unit tests pass, while the production code isn't deployed as a true
+#      python package. This will be worked on in a subsequent release.
+try:
+    from .utils import Utils
+except (ImportError, ValueError):
+    from utils import Utils
 
 
 class KeystoneClient(object):

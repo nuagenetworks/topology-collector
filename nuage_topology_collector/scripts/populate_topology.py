@@ -12,10 +12,18 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from helper import constants
 import glob
 import os
 import sys
+
+# TODO(OPENSTACK-2892) :
+#      This is temporary code for dealing with py2/py3 compatibility and have
+#      unit tests pass, while the production code isn't deployed as a true
+#      python package. This will be worked on in a subsequent release.
+try:
+    from .helper import constants
+except (ImportError, ValueError):
+    from helper import constants
 import topology_import
 
 

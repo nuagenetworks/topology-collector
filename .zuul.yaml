@@ -3,7 +3,9 @@
       jobs:
         - openstack-tox-pep8
         - openstack-tox-py27
+        - openstack-tox-py36
     gate:
       jobs:
         - openstack-tox-pep8
         - openstack-tox-py27
+        - openstack-tox-py36

@@ -4,10 +4,6 @@ import testtools
 from nuage_topology_collector.scripts.generate_topology import get_hypervisors
 
 
-# run me as :
-# python -m testtools.run nuage_topology_collector/tests/test_hypervisors.py
-
-
 # Overcloud Hypervisor
 class Hypervisor(object):
     def __init__(self, ID, hypervisor_hostname, state, status):

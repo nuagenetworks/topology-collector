@@ -40,7 +40,6 @@
         {
  "name": "ens3f1",
  "vf_info": [
- { "device-name": "virtfn0", "pci-id": "0000:03:02.0" },
  { "device-name": "virtfn9", "pci-id": "0000:03:03.1" }],
  "neighbor-system-name": "cas-sf6-014",
  "neighbor-system-mgmt-ip": "10.101.2.114",
