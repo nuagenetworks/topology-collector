@@ -121,10 +121,10 @@ def import_interfaces(reader, converter):
                             "switchport_mapping": switchport_mapping,
                             "interface": interface["name"]
                         }
-                        LOG.debug("Failed to import SwitchPort Mapping:"
-                                  "%(switchport_mapping)s" % msg_arg,
-                                  exc_info=True)
-                        LOG.debug("ERROR: %(error_msg)s" % msg_arg)
+                        LOG.user("Failed to import SwitchPort Mapping:"
+                                 "%(switchport_mapping)s" % msg_arg,
+                                 exc_info=True)
+                        LOG.user("ERROR: %(error_msg)s" % msg_arg)
                         mapping.append(switchport_mapping)
                     interface_of_compute_with_error.update({
                         (compute_host_name, interface["name"]): mapping})
