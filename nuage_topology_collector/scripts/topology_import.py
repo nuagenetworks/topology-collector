@@ -79,13 +79,18 @@ class TopologyConverter(object):
             'switch_info': interface['neighbor-system-name'],
             'switch_id': interface['neighbor-system-mgmt-ip'],
             'port_id': interface['neighbor-system-port'],
-            'host_id': interface['host_id']
+            'host_id': interface['host_id'],
+            'bridge': interface['ovs-bridge']
         }
         interface_mappings = []
         for virtual_function in interface['vf_info']:
             vf_mapping = self.function_to_mapping(virtual_function)
             interface_mapping = dict(base_mapping, **vf_mapping)
             interface_mappings.append(interface_mapping)
+        vf_mapping = {'pci_slot': interface['name']}
+        interface_mapping = dict(base_mapping, **vf_mapping)
+        interface_mappings.append(interface_mapping)
+
         with script_logging.indentation():
             if not interface_mappings:
                 LOG.user("No Interface mapping exsits for %s " %

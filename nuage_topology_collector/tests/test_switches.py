@@ -30,8 +30,8 @@ class TestSwitches(testtools.TestCase):
             with open(abs_path_n_lldp_output) as file:
                 expected_json_obj = file.read()
             json_obj = switch.generate_json(interface, lldpout, lsout)
-            self.assertEqual(json.loads(json_obj),
-                             json.loads(expected_json_obj))
+            self.assertEqual(json.loads(expected_json_obj),
+                             json.loads(json_obj))
 
     def test_nokia_switch_json(self):
         self.validate_json(NokiaSwitch())

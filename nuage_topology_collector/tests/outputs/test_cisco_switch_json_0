@@ -8,4 +8,6 @@
  { "device-name": "virtfn65", "pci-id": "0000:03:14.2" }],
  "neighbor-system-name": "cisco-nexus",
  "neighbor-system-mgmt-ip": "135.227.145.246",
- "neighbor-system-port": "eth1/2"  }
+ "neighbor-system-port": "eth1/2",
+ "ovs-bridge": null
+}

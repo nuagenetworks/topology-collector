@@ -8,4 +8,6 @@
  { "device-name": "virtfn65", "pci-id": "0000:03:14.2" }],
  "neighbor-system-name": "cas-sf6-014",
  "neighbor-system-mgmt-ip": "10.101.2.114",
- "neighbor-system-port": "1/1/3"  }
+ "neighbor-system-port": "1/1/3",
+ "ovs-bridge": null
+}

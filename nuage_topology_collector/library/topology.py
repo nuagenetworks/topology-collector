@@ -14,9 +14,11 @@
 #  under the License.
 import datetime
 import os
+import re
+import time
+
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import b
-import re
 from abc import abstractmethod
 DOCUMENTATION = '''
 ---
@@ -33,6 +35,25 @@ options:
     description:
       - The network interface to interrogate
     required: true
+  ovs_bridge:
+    description:
+      - OVS bridge this interface belongs to
+    required: false
+  host:
+    default: '127.0.0.1'
+    description:
+      - OVS Manager address
+  port:
+    default: '6640'
+    description:
+      - OVS Manager port
+  advanced_mode:
+    default: False
+    description:
+      - Execution mode of LLDP collection.
+        advanced_mode will trigger creation of LLDP sink port
+        under ovs_bridge and will install a specific LLDP flow from
+        interface to sink port created
 '''
 
 EXAMPLES = '''
@@ -56,11 +77,10 @@ class Switch(object):
     # function must change with them.
 
     @abstractmethod
-    def generate_json(self, interface, lldpout, lsout):
+    def generate_json(self, interface, lldpout, lsout, ovsapi=None):
         pass
 
-    @staticmethod
-    def validate_lldp(lldpout):
+    def validate_lldp(self, lldpout):
         LLDPSYSTEMNAME = "System Name TLV"
         SYSTEMNAME_RE = LLDPSYSTEMNAME + r"\s+(\S+)\s+"
         LLDPSYSTEMIP = "Management Address TLV"
@@ -125,15 +145,21 @@ class Switch(object):
         return vfs_info
 
     @staticmethod
-    def create_system_json(parsed, neighborname, neighborip, neighborport):
+    def create_system_json(parsed, neighborname, neighborip,
+                           neighborport, bridge=None):
 
         NEIGHBORNAME = "neighbor-system-name"
         NEIGHBORIP = "neighbor-system-mgmt-ip"
         NEIGHBORPORT = "neighbor-system-port"
+        OVSBRIDGE = 'ovs-bridge'
 
         parsed += ",\n \"%s\": \"%s\"" % (NEIGHBORNAME, neighborname)
         parsed += ",\n \"%s\": \"%s\"" % (NEIGHBORIP, neighborip)
-        parsed += ",\n \"%s\": \"%s\" " % (NEIGHBORPORT, neighborport)
+        parsed += ",\n \"%s\": \"%s\"" % (NEIGHBORPORT, neighborport)
+        if bridge:
+            parsed += ",\n \"%s\": \"%s\"" % (OVSBRIDGE, bridge)
+        else:
+            parsed += ",\n \"%s\": null" % OVSBRIDGE
 
         return "{ %s }" % parsed
 
@@ -167,14 +193,14 @@ class NokiaSwitch(Switch):
             (int(ifindex) >> 21) & 0x3,
             ((int(ifindex) >> 15) & 0x3f) | ((int(ifindex) >> 17) & 0xc0))
 
-    def generate_json(self, interface, lldpout, lsout):
+    def generate_json(self, interface, lldpout, lsout, bridge=None):
         vfs_info = self.create_vfs_json(interface, lsout)
 
         neighborname, neighborip, neighborport = self.validate_lldp(lldpout)
         neighborport = self.convert_ifindex_to_ifname(neighborport)
 
         return self.create_system_json(vfs_info, neighborname,
-                                       neighborip, neighborport)
+                                       neighborip, neighborport, bridge)
 
 
 class CiscoSwitch(Switch):
@@ -189,33 +215,143 @@ class CiscoSwitch(Switch):
             return "None"
         return str(scratch.group(1)[0:3].lower() + scratch.group(2))
 
-    def generate_json(self, interface, lldpout, lsout):
+    def generate_json(self, interface, lldpout, lsout, bridge=None):
         vfs_info = self.create_vfs_json(interface, lsout)
 
         neighborname, neighborip, neighborport = self.validate_lldp(lldpout)
         # just get the port number
         neighborport = self.retrieve_port_number(neighborport)
         return self.create_system_json(vfs_info, neighborname,
-                                       neighborip, neighborport)
+                                       neighborip, neighborport, bridge)
+
+
+def prepare_itf_for_lldp(ovsdbapi, interface, bridge, module):
+    if not bridge:
+        return interface
+    try:
+        from ovsdbapp.schema.open_vswitch import commands as cmd
+        from ovsdbapp.backend.ovs_idl import command
+    except ImportError:
+        module.fail_json(msg="ovsdbapp module is required")
+
+    # Setup a lldp sink port and ovs flow
+    sink = 'lldp.' + interface
+    with ovsdbapi.transaction(check_error=True) as txn:
+        # Add the internal bridge port
+        c = cmd.AddPortCommand(ovsdbapi, bridge, sink, may_exist=True)
+        txn.add(c)
+
+        c = command.DbSetCommand(ovsdbapi, 'Interface', sink,
+                                 ('type', 'internal'))
+        txn.add(c)
+
+    # setup itf
+    params = {
+        'prefix': "sudo " if os.getlogin() != "root" else "",
+        'ofctl': module.get_bin_path("ovs-ofctl", True),
+        'ip': module.get_bin_path("ip", True),
+        'lldptool': module.get_bin_path("lldptool", True),
+        'systemctl': module.get_bin_path("systemctl", True),
+        'br': bridge,
+        'if': interface,
+        'ovsif': sink
+    }
+
+    # add flow to lldp port
+    cmd = ("%(prefix)s %(ofctl)s dump-ports %(br)s %(if)s" % params)
+    rc, out, err = module.run_command(cmd, check_rc=True)
+    b = re.search(r"\s+port\s+(\d+)", out)
+    params['in'] = b.group(1) if b else None
+
+    cmd = ("%(prefix)s %(ofctl)s dump-ports %(br)s %(ovsif)s" % params)
+    rc, out, err = module.run_command(cmd, check_rc=True)
+    b = re.search(r"\s+port\s+(\d+)", out)
+    params['out'] = b.group(1) if b else None
+
+    cmd = ("%(prefix)s %(ofctl)s add-flow %(br)s in_port=%(in)s,"
+           "dl_dst=01:80:c2:00:00:0e,dl_type=0x88cc,actions=output:%(out)s" %
+           params)
+    module.run_command(cmd, check_rc=True)
+
+    commands = list()
+    commands.append("%(prefix)s %(ip)s link set up dev %(ovsif)s" % params)
+    commands.append("%(prefix)s %(lldptool)s set-lldp -g nb "
+                    "-i %(ovsif)s adminStatus=rx" %
+                    params)
+    commands.append("%(prefix)s %(systemctl)s restart lldpad" % params)
+
+    for c in commands:
+        module.run_command(c, check_rc=True)
+
+    return sink
+
+
+def clean_lldp_config(ovsdbapi, interface, bridge, module):
+    if not bridge:
+        return
+    pname = 'lldp.' + interface
+    params = {
+        'prefix': "sudo " if os.getlogin() != "root" else "",
+        'ofctl': module.get_bin_path("ovs-ofctl", True),
+        'br': bridge,
+    }
+    command = ("%(prefix)s %(ofctl)s del-flows %(br)s "
+               "dl_dst=01:80:c2:00:00:0e" % params)
+    module.run_command(command, check_rc=True)
+    ovsdbapi.del_port(pname, bridge).execute(check_error=True)
+
+
+def get_ovsdb_client(module):
+    try:
+        from ovsdbapp.backend.ovs_idl import connection
+        from ovsdbapp.schema.open_vswitch import impl_idl
+    except ImportError:
+        module.fail_json(msg="ovsdbapp module is required")
+
+    endpoint = ("tcp:%(host)s:%(port)s" % module.params)
+    client = None
+    try:
+        idl = connection.OvsdbIdl.from_server(endpoint, 'Open_vSwitch')
+        connection = connection.Connection(idl=idl, timeout=3)
+        client = impl_idl.OvsdbIdl(connection)
+    except Exception as e:
+        module.fail_json(msg=("could not connect to openvswitch. "
+                              "error: %s") % str(e))
+    return client
 
 
 def main():
     arg_spec = dict(
         system_name=dict(required=True),
-        interface=dict(required=True)
+        interface=dict(required=True),
+        ovs_bridge=dict(required=False),
+        host=dict(type='str', required=False, default='127.0.0.1'),
+        port=dict(type='str', required=False, default='6640'),
+        advanced_mode=dict(type='bool', required=False, default=False),
+        lldp_poll_delay=dict(type='int', required=False, default=5)
     )
 
     module = AnsibleModule(argument_spec=arg_spec)
 
     system_name = module.params['system_name']
     interface = module.params['interface']
+    ovs_bridge = module.params['ovs_bridge']
+    advanced_mode = module.params['advanced_mode']
+    lldp_poll_delay = module.params['lldp_poll_delay']
 
     LLDPTOOL = module.get_bin_path('lldptool', True)
     LS = module.get_bin_path('ls', True)
 
     startd = datetime.datetime.now()
     prefix = "sudo " if os.getlogin() != "root" else ""
-    lldpcmd = prefix + "%s -t -n -i %s" % (LLDPTOOL, interface)
+    itf = interface
+    if advanced_mode:
+        ovsdb_client = get_ovsdb_client(module)
+        itf = prepare_itf_for_lldp(ovsdb_client, interface, ovs_bridge, module)
+
+    time.sleep(lldp_poll_delay)
+
+    lldpcmd = prefix + "%s -t -n -i %s" % (LLDPTOOL, itf)
 
     lldprc, lldpout, lldperr = module.run_command(lldpcmd)
     if lldperr is None:
@@ -233,6 +369,8 @@ def main():
     elif "Cisco" in lldpout:
         switch = CiscoSwitch()
     else:
+        if advanced_mode:
+            clean_lldp_config(ovsdb_client, interface, ovs_bridge, module)
         module.exit_json(msg="No LLDP output was found for this interface",
                          stdout=None)
 
@@ -251,7 +389,10 @@ def main():
 
     json_entry = None
     try:
-        json_entry = switch.generate_json(interface, lldpout, lsout)
+        json_entry = switch.generate_json(interface,
+                                          lldpout,
+                                          lsout,
+                                          ovs_bridge)
     except Exception as e:
         module.fail_json(msg="One of the neighbor information is not "
                              "present in LLDP Output System Name: %s, "
@@ -259,6 +400,10 @@ def main():
                                                                   interface,
                                                                   e.args),
                          stdout=json_entry)
+    finally:
+        if advanced_mode:
+            clean_lldp_config(ovsdb_client, interface, ovs_bridge, module)
+
     module.exit_json(lldpcmd=lldpcmd,
                      lscmd=lscmd,
                      system_name=system_name,
