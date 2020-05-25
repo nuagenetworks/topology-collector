@@ -7,27 +7,63 @@
     search_regex: OpenSSH
     delay: 1
 
-- name: Initialize interface_list
-  set_fact:
-    interface_list: []
+- name: Generate interface_list
+  block:
+    - name: Set interfaces fact from ansible_interfaces
+      set_fact:
+        interfaces: "{{ ansible_interfaces | select('match', interface_regex) | list }}"
 
-- name: List the ansible interfaces
-  set_fact:
-    interface_list: "{{ interface_list }} + ['{{ item }}']"
-  when: item.find(interface_regex) > -1
-  with_items: "{{ ansible_interfaces }}"
+    - name: Get OVS bridge info
+      bridgeinfo:
+        host: "{{ ovs_manager_ip | default(omit) }}"
+        port: "{{ ovs_manager_port | default(omit) }}"
+      register: brinfo
+      ignore_errors: yes
 
-- name: Display interface list when verbosity >= 1, skip otherwise
-  debug: msg="{{ interface_list }}" verbosity=1
+    - name: Set ovs_topology fact when bridgeinfo succeeded
+      set_fact:
+        ovs_topology: "{{ brinfo.brinfo | dict2items | selectattr('key', 'match', interface_regex)  | list | items_to_dict }}"
+      when: not brinfo.failed
+
+    - name: Set ovs_topology fact when bridgeinfo failed
+      set_fact:
+        ovs_topology: {}
+      when: brinfo.failed
+
+    - name: Set interface_list fact
+      set_fact:
+        interface_list: "{{ interfaces | union(ovs_topology.keys() | list) }}"
+
+    - name: Display interface list when verbosity >= 1, skip otherwise
+      debug: msg="{{ interface_list }}" verbosity=1
+
+- name: Ensure lldpad
+  become: true
+  package:
+    name: lldpad
+    state: present
 
 - name: Ensure lldpad service is running
   become: true
   service:
     name: lldpad
+    enabled: yes
     state: started
 
+- name: Configure lldpad
+  become: true
+  command: lldptool set-lldp -i {{ item }}  adminStatus=rx
+  with_items: "{{ interface_list }}"
+
 - name: Execute topology collector
-  topology: system_name={{ inventory_hostname }} interface={{ item }}
+  topology:
+    system_name: "{{ inventory_hostname }}"
+    interface: "{{ item }}"
+    ovs_bridge: "{{ ovs_topology[item] | default(omit) }}"
+    host: "{{ ovs_manager_ip | default(omit) }}"
+    port: "{{ ovs_manager_port | default(omit) }}"
+    advanced_mode: "{{ ovs_advanced_mode | default(False) }}"
+    lldp_poll_delay: "{{ lldp_poll_delay | default(5) }}"
   with_items: "{{ interface_list }}"
   register: interface_json
   ignore_errors: yes

@@ -5,7 +5,11 @@
   temp_dir: /tmp/topo-coll/tmp/
   output_dir: /tmp/topo-coll/reports
   output_file_prefix: topo_report
-  interface_regex: en  # change to '' for matching all the interfaces
+  interface_regex: 'en|dpdk'
   remote_usr: heat-admin
   osc_env_file: /home/stack/overcloudrc
   undercloud_env_file : /home/stack/stackrc
+  lldp_poll_delay: 5
+  # ovs_manager_ip: 127.0.0.1
+  # ovs_manager_port: 6640
+  # ovs_advanced_mode: False
