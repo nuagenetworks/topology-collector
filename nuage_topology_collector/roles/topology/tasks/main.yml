@@ -54,6 +54,9 @@
   become: true
   command: lldptool set-lldp -i {{ item }}  adminStatus=rx
   with_items: "{{ interface_list }}"
+  when:
+    - "'dpdk' not in item"
+    - not ovs_advanced_mode|default(False)
 
 - name: Execute topology collector
   topology:
