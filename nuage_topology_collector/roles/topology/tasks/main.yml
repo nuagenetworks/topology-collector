@@ -22,7 +22,7 @@
 
     - name: Set ovs_topology fact when bridgeinfo succeeded
       set_fact:
-        ovs_topology: "{{ brinfo.brinfo | dict2items | selectattr('key', 'match', interface_regex)  | list | items_to_dict }}"
+        ovs_topology: "{{ brinfo.brinfo | dict_to_items | selectattr('key', 'match', interface_regex)  | list | items_to_dict }}"
       when: not brinfo.failed
 
     - name: Set ovs_topology fact when bridgeinfo failed
