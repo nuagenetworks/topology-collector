@@ -18,7 +18,6 @@ import re
 import time
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.six import b
 from abc import abstractmethod
 
 DOCUMENTATION = '''
@@ -401,11 +400,11 @@ def main():
 
     lldprc, lldpout, lldperr = module.run_command(lldpcmd)
     if lldperr is None:
-        lldperr = b('')
+        lldperr = ''
     if lldpout is None:
-        lldpout = b('')
+        lldpout = ''
     if lldprc != 0:
-        lldpout = b('')
+        lldpout = ''
 
     # Determining the switch type from the LLDP output itself
     # Here we can add / support all kind of switches to come
@@ -425,13 +424,13 @@ def main():
     lsrc, lsout, lserr = module.run_command(lscmd)
 
     if lserr is None:
-        lserr = b('')
+        lserr = ''
 
     if lsout is None:
-        lsout = b('')
+        lsout = ''
 
     if lldprc != 0:
-        lldpout = b('')
+        lldpout = ''
 
     json_entry = None
     try:
