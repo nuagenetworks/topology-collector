@@ -1,6 +1,7 @@
 ---
 - name: Run the whole thing
   hosts: localhost
+  gather_facts: no
   remote_user: "{{ remote_usr }}"
   vars_files: ["user_vars.yml"]
 
@@ -11,5 +12,8 @@
   - name: Make sure tmp dir exists
     file: path="{{ temp_dir }}" state=directory
 
-- include: topology.yml
-- include: report.yml
+- name: Run topology playbook
+  import_playbook: topology.yml
+
+- name: Run report playbook
+  import_playbook: report.yml

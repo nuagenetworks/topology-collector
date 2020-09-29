@@ -1,4 +1,8 @@
 ---
+- name: Gather needed facts
+  setup:
+    gather_subset: network
+
 - name: Wait for ssh to be ready
   local_action:
     module: wait_for
@@ -9,9 +13,25 @@
 
 - name: Generate interface_list
   block:
+    - name: Get VF interfaces
+      become: yes
+      shell: "set -o pipefail && lshw -quiet  -c network -businfo | grep  'Virtual Function' | awk '{print $2}'"
+      register: lshw
+      failed_when: false
+
+    - name: Set vf_list fact when lshw succeded
+      set_fact:
+        vf_list: "{{ lshw.stdout_lines | list }}"
+      when: lshw.rc == 0
+
+    - name: Set vf_list fact when lshw failed
+      set_fact:
+        vf_list: []
+      when: lshw.rc != 0
+
     - name: Set interfaces fact from ansible_interfaces
       set_fact:
-        interfaces: "{{ ansible_interfaces | select('match', interface_regex) | list }}"
+        interfaces: "{{ ansible_interfaces | select('match', interface_regex) | list | difference(vf_list) }}"
 
     - name: Get OVS bridge info
       bridgeinfo:
