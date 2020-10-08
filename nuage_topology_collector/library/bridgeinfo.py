@@ -71,18 +71,39 @@ class OvsdbQuery(object):
 
     def _get_ovsdb_client(self, module):
         try:
+            from ovsdbapp.backend.ovs_idl import command
             from ovsdbapp.backend.ovs_idl import connection
+            from ovsdbapp.backend.ovs_idl import idlutils
             from ovsdbapp.schema.open_vswitch import impl_idl
         except ImportError as e:
             self.module.log(msg=str(e))
             self.module.fail_json(msg="ovsdbapp module is required")
+
+        class GetIfaceCommand(command.ReadOnlyCommand):
+            def __init__(self, api, iface):
+                super(GetIfaceCommand, self).__init__(api)
+                self.iface = iface
+
+            def run_idl(self, txn):
+                iface = idlutils.row_by_value(self.api.idl,
+                                              'Interface',
+                                              'name',
+                                              self.iface)
+                self.result = iface
+
+        class TcOvsdbIdl(impl_idl.OvsdbIdl):
+            def __init__(self, connection):
+                super(TcOvsdbIdl, self).__init__(connection)
+
+            def get_iface(self, iface):
+                return GetIfaceCommand(self, iface)
 
         endpoint = ("tcp:%(host)s:%(port)s" % module.params)
         client = None
         try:
             idl = connection.OvsdbIdl.from_server(endpoint, 'Open_vSwitch')
             connection = connection.Connection(idl=idl, timeout=3)
-            client = impl_idl.OvsdbIdl(connection)
+            client = TcOvsdbIdl(connection)
         except Exception as e:
             self.module.fail_json(msg=("could not connect to openvswitch. "
                                        "error: %s") % str(e))
@@ -103,13 +124,17 @@ class OvsdbQuery(object):
     def get_ovs_topology(self):
         ovs_topology = dict()
         bridges = self.ovsdbclient.list_br().execute(check_error=True)
+
         for br in bridges:
             ifaces = self.ovsdbclient.list_ifaces(br).execute(check_error=True)
-            for iface in ifaces:
-                bond_slaves = self.check_linux_bond(iface)
+            for ifname in ifaces:
+                bond_slaves = self.check_linux_bond(ifname)
                 for slave in bond_slaves:
-                    ovs_topology[slave] = br
-                ovs_topology[iface] = br
+                    ovs_topology[slave] = {'bridge': br, 'dpdk': False}
+                iface = self.ovsdbclient.get_iface(ifname).execute(
+                    check_error=True)
+                ovs_topology[ifname] = {'bridge': br,
+                                        'dpdk': iface.type == 'dpdk'}
         return ovs_topology
 
 

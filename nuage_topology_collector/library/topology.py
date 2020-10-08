@@ -291,9 +291,14 @@ def clean_lldp_config(ovsdbapi, interface, bridge, module):
     pname = 'lldp.' + interface
     params = {
         'prefix': "sudo " if os.getlogin() != "root" else "",
+        'lldptool': module.get_bin_path("lldptool", True),
         'ofctl': module.get_bin_path("ovs-ofctl", True),
+        'ovsif': pname,
         'br': bridge,
     }
+    command = ("%(prefix)s %(lldptool)s set-lldp -i %(ovsif)s "
+               "adminStatus=disabled" % params)
+    module.run_command(command, check_rc=True)
     command = ("%(prefix)s %(ofctl)s del-flows %(br)s "
                "dl_dst=01:80:c2:00:00:0e" % params)
     module.run_command(command, check_rc=True)
@@ -327,7 +332,7 @@ def main():
         host=dict(type='str', required=False, default='127.0.0.1'),
         port=dict(type='str', required=False, default='6640'),
         advanced_mode=dict(type='bool', required=False, default=False),
-        lldp_poll_delay=dict(type='int', required=False, default=5)
+        lldp_poll_delay=dict(type='int', required=False, default=30)
     )
 
     module = AnsibleModule(argument_spec=arg_spec)
@@ -347,12 +352,13 @@ def main():
     if advanced_mode:
         ovsdb_client = get_ovsdb_client(module)
         itf = prepare_itf_for_lldp(ovsdb_client, interface, ovs_bridge, module)
-
-    time.sleep(lldp_poll_delay)
+        time.sleep(lldp_poll_delay)
 
     lldpcmd = prefix + "%s -t -n -i %s" % (LLDPTOOL, itf)
 
     lldprc, lldpout, lldperr = module.run_command(lldpcmd)
+    module.log("cmd: {} cmdout: {}".format(lldpcmd, lldpout))
+
     if lldperr is None:
         lldperr = ''
     if lldpout is None:
