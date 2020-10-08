@@ -9,7 +9,6 @@
   remote_usr: heat-admin
   osc_env_file: /home/stack/overcloudrc
   undercloud_env_file : /home/stack/stackrc
-  lldp_poll_delay: 5
+  lldp_poll_delay: 30
   # ovs_manager_ip: 127.0.0.1
   # ovs_manager_port: 6640
-  # ovs_advanced_mode: False

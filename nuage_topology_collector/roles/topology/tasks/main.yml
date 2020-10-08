@@ -55,7 +55,9 @@
         interface_list: "{{ interfaces | union(ovs_topology.keys() | list) }}"
 
     - name: Display interface list when verbosity >= 1, skip otherwise
-      debug: msg="{{ interface_list }}" verbosity=1
+      debug:
+        msg: "{{ interface_list }}"
+        verbosity: 1
 
 - name: Ensure lldpad
   become: true
@@ -68,31 +70,38 @@
   service:
     name: lldpad
     enabled: yes
-    state: started
+    state: restarted
 
 - name: Configure lldpad
   become: true
   command: lldptool set-lldp -i {{ item }}  adminStatus=rx
   with_items: "{{ interface_list }}"
   when:
-    - "'dpdk' not in item"
-    - not ovs_advanced_mode|default(False)
+    - ovs_topology[item] is not defined or not ovs_topology[item]['dpdk']
+
+- name: Allow lldpad see packets
+  pause:
+    seconds: "{{ lldp_poll_delay | default(30) }}"
 
 - name: Execute topology collector
+  vars:
+    brdict: "{{ ovs_topology[item] | default({}) }}"
   topology:
     system_name: "{{ inventory_hostname }}"
     interface: "{{ item }}"
-    ovs_bridge: "{{ ovs_topology[item] | default(omit) }}"
+    ovs_bridge: "{{ brdict['bridge'] | default(omit) }}"
     host: "{{ ovs_manager_ip | default(omit) }}"
     port: "{{ ovs_manager_port | default(omit) }}"
-    advanced_mode: "{{ ovs_advanced_mode | default(False) }}"
-    lldp_poll_delay: "{{ lldp_poll_delay | default(5) }}"
+    advanced_mode: "{{ ovs_topology[item] is defined and ovs_topology[item]['dpdk'] }}"
+    lldp_poll_delay: "{{ lldp_poll_delay | default(30) }}"
   with_items: "{{ interface_list }}"
   register: interface_json
   ignore_errors: yes
 
 - name: Display topology json when verbosity >= 1, skip otherwise
-  debug: msg="{{ interface_json }}" verbosity=1
+  debug:
+    msg: "{{ interface_json }}"
+    verbosity: 1
 
 - name: Create output file name
   set_fact: json_outfile={{ temp_dir }}/{{ inventory_hostname }}.json
@@ -102,4 +111,6 @@
   delegate_to: 127.0.0.1
 
 - name: Print out the contents of the json output file when verbosity >= 1, skip otherwise
-  debug: msg="{{ lookup('file', '{{ json_outfile }}') }}" verbosity=1
+  debug:
+    msg: "{{ lookup('file', '{{ json_outfile }}') }}"
+    verbosity: 1
