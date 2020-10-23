@@ -250,15 +250,20 @@ class NokiaSwitch(Switch):
 
 class CiscoSwitch(Switch):
 
-    def __init__(self):
+    def __init__(self, switch_type):
         super(CiscoSwitch, self).__init__('cisco')
+        self.switch_type = switch_type
 
-    @staticmethod
-    def retrieve_port_number(neighborport):
+    def retrieve_port_number(self, neighborport):
         scratch = re.search(r'(\w+)([0-9]+(/[0-9]+)*)', str(neighborport))
         if not scratch:
             return "None"
-        return str(scratch.group(1)[0:3].lower() + scratch.group(2))
+        if 'NX-OS' in self.switch_type:
+            return str(scratch.group(1)[0:3].lower() + scratch.group(2))
+        elif 'NCS' in self.switch_type:
+            return neighborport
+        else:
+            return "None"
 
     def generate_json(self, interface, lldpout, lsout, bridge=None):
         vfs_info = self.create_vfs_json(interface, lsout)
@@ -370,6 +375,22 @@ def get_ovsdb_client(module):
     return client
 
 
+def get_switch(lldp_packet):
+    switch = None
+    LLDPSYSTEMDESC = "System Description TLV"
+    SYSTEMDESC_RE = LLDPSYSTEMDESC + r"\s([\S\s]+?)(?=TLV)"
+    sdtlv = re.search(SYSTEMDESC_RE, lldp_packet)
+    if sdtlv:
+        sysdesc = sdtlv.group(0)
+        if 'Nokia' in sysdesc:
+            switch = NokiaSwitch()
+        else:
+            cisco = re.search(r"NX-OS|NCS-55", sysdesc)
+            if cisco:
+                switch = CiscoSwitch(cisco.group(0))
+    return switch
+
+
 def main():
     arg_spec = dict(
         system_name=dict(required=True),
@@ -413,16 +434,15 @@ def main():
         lldpout = ''
 
     # Determining the switch type from the LLDP output itself
-    # Here we can add / support all kind of switches to come
-    switch = None
-    if "Nokia" in lldpout:
-        switch = NokiaSwitch()
-    elif "Cisco" in lldpout:
-        switch = CiscoSwitch()
-    else:
+    # get_switch() method will return None in case
+    # - no System Description TLV in lldp packet
+    # - System Description TLV does not contain any recognized
+    #   switch type patterns
+    switch = get_switch(lldpout)
+    if not switch:
         if advanced_mode:
             clean_lldp_config(ovsdb_client, interface, ovs_bridge, module)
-        module.exit_json(msg="No LLDP output was found for this interface",
+        module.exit_json(msg="No System Description TLV received on interface",
                          stdout=None)
 
     lscmd = "%s -la --time-style long-iso /sys/class/net/%s/device/" % (

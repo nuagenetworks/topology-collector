@@ -1,0 +1,13 @@
+{
+ "name": "ensp0",
+ "vf_info": [
+ { "device-name": "virtfn0", "pci-id": "0000:03:02.0" },
+ { "device-name": "virtfn1", "pci-id": "0000:03:02.1" },
+ { "device-name": "virtfn2", "pci-id": "0000:03:02.2" },
+ { "device-name": "virtfn3", "pci-id": "0000:03:02.3" },
+ { "device-name": "virtfn65", "pci-id": "0000:03:14.2" }],
+ "neighbor-system-name": "BBTPNJ02B06-C",
+ "neighbor-system-mgmt-ip": "172.31.62.0",
+ "neighbor-system-port": "TwentyFiveGigE0/0/0/23/0",
+ "ovs-bridge": null
+}

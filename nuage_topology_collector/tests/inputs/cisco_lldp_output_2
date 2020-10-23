@@ -1,0 +1,22 @@
+Chassis ID TLV
+    	MAC: 00:bc:60:7e:e8:d9
+Port ID TLV
+    	Ifname: TwentyFiveGigE0/0/0/23/0
+Time to Live TLV
+    	120
+System Name TLV
+    	BBTPNJ02B06-C
+System Description TLV
+     	6.6.25, NCS-5500
+Port Description TLV
+
+System Capabilities TLV
+    	System capabilities:  Router
+    	Enabled capabilities: Router
+Management Address TLV
+    	IPv4: 172.31.62.0
+    	Ifindex: 123
+Management Address TLV
+    	IPv6: 2607:f160:f:f001:1:34:0:200
+    	Ifindex: 123
+End of LLDPDU TLV

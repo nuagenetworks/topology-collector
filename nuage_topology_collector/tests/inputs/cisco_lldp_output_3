@@ -1,0 +1,19 @@
+Chassis ID TLV
+    	MAC: 00:bc:60:77:68:db
+Port ID TLV
+    	Ifname: TenGigE0/0/0/11
+Time to Live TLV
+    	120
+System Name TLV
+    	AL14_BB09-SR-5501-04.rtp.cisco.com
+System Description TLV
+     	7.1.2.32I, NCS-5500
+Port Description TLV
+    	Connection to AY10-eNSE-UCSC-220-02 PCI 2.2
+System Capabilities TLV
+    	System capabilities:  Router
+    	Enabled capabilities: Router
+Management Address TLV
+    	IPv4: 1.2.3.4
+    	Ifindex: 123
+End of LLDPDU TLV
