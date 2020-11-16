@@ -425,7 +425,6 @@ def main():
 
     lldprc, lldpout, lldperr = module.run_command(lldpcmd)
     module.log("cmd: {} cmdout: {}".format(lldpcmd, lldpout))
-
     if lldperr is None:
         lldperr = ''
     if lldpout is None:

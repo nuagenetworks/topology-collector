@@ -66,12 +66,6 @@ class KeystoneClient(object):
                 Unauthorized) as e:
             raise EnvironmentError('Authentication failure: ' + str(e))
 
-    def get_domains(self):
-        return self.client.domains.list()
-
-    def get_users(self):
-        return self.client.users.list()
-
 
 class NeutronClient(object):
     def __init__(self):
@@ -100,23 +94,3 @@ class NeutronClient(object):
 
     def create_switchport_mapping(self, body):
         return self.client.post(self.switchport_mapping_path, body)
-
-
-class NovaClient(object):
-    def __init__(self):
-        self.client = None
-
-    def authenticate(self):
-        from novaclient import client as novaclient
-
-        keystone_client = KeystoneClient().authenticate(init_client=False)
-        self.client = (
-            novaclient.Client('2',
-                              session=keystone_client.session))
-        return self
-
-    def get_hypervisor_list(self):
-        return self.client.hypervisors.list()
-
-    def get_server_list(self):
-        return self.client.servers.list()

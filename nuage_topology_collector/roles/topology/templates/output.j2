@@ -1,5 +1,5 @@
 {
-    "hypervisor hostname": "{{ hostname|default("") }}",
+    "hypervisor hostname": "{{ service_host|default("") }}",
     "service_host name": "{{ service_host|default("") }}",
     "interfaces": [
 {% set comma = joiner(', ') %}

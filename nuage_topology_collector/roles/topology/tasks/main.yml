@@ -1,63 +1,46 @@
 ---
-- name: Gather needed facts
-  setup:
-    gather_subset: network
-
 - name: Wait for ssh to be ready
-  local_action:
-    module: wait_for
+  wait_for:
     port: "22"
-    host: "{{ inventory_hostname }}"
+    host: "{{ hostvars[inventory_hostname].ansible_host }}"
     search_regex: OpenSSH
     delay: 1
+  delegate_to: localhost
+
+- name: Set agents fact
+  set_fact:
+    agents: "{{ hostvars['localhost'].overcloud_agents }}"
 
 - name: Generate interface_list
   block:
-    - name: Get VF interfaces
-      become: yes
-      shell: "set -o pipefail && lshw -quiet  -c network -businfo | grep  'Virtual Function' | awk '{print $2}'"
-      register: lshw
-      failed_when: false
-
-    - name: Set vf_list fact when lshw succeded
+    - name: Set interfaces fact from Nic Switch Agent
       set_fact:
-        vf_list: "{{ lshw.stdout_lines | list }}"
-      when: lshw.rc == 0
+        interfaces: "{{ agents[inventory_hostname]['configurations']['device_mappings'].values() | list }}"
+      when:
+        - agents[inventory_hostname]['configurations']['device_mappings'] is defined
 
-    - name: Set vf_list fact when lshw failed
-      set_fact:
-        vf_list: []
-      when: lshw.rc != 0
-
-    - name: Set interfaces fact from ansible_interfaces
-      set_fact:
-        interfaces: "{{ ansible_interfaces | select('match', interface_regex) | list | difference(vf_list) }}"
-
-    - name: Get OVS bridge info
+    - name: Get OVS bridge topologies
       bridgeinfo:
         host: "{{ ovs_manager_ip | default(omit) }}"
         port: "{{ ovs_manager_port | default(omit) }}"
+        bridge_mappings: "{{ agents[inventory_hostname]['configurations']['bridge_mappings'] }}"
       register: brinfo
-      ignore_errors: yes
+      when:
+        - agents[inventory_hostname]['configurations']['bridge_mappings'] is defined
 
-    - name: Set ovs_topology fact when bridgeinfo succeeded
+    - name: Set ovs_topology fact for OVS hosts
       set_fact:
         ovs_topology: "{{ brinfo.brinfo | dict_to_items | selectattr('key', 'match', interface_regex)  | list | items_to_dict }}"
-      when: not brinfo.failed
+      when: brinfo is not skipped
 
-    - name: Set ovs_topology fact when bridgeinfo failed
+    - name: Set ovs_topology fact when bridgeinfo skipped
       set_fact:
         ovs_topology: {}
-      when: brinfo.failed
+      when: brinfo is skipped
 
     - name: Set interface_list fact
       set_fact:
-        interface_list: "{{ interfaces | union(ovs_topology.keys() | list) }}"
-
-    - name: Display interface list when verbosity >= 1, skip otherwise
-      debug:
-        msg: "{{ interface_list }}"
-        verbosity: 1
+        interface_list: "{{ interfaces| default([]) | union(ovs_topology.keys() | list) }}"
 
 - name: Ensure lldpad
   become: true
@@ -77,13 +60,14 @@
   command: lldptool set-lldp -i {{ item }}  adminStatus=rx
   with_items: "{{ interface_list }}"
   when:
-    - ovs_topology[item] is not defined or not ovs_topology[item]['dpdk']
+    - ovs_topology[item] is not defined or not ovs_topology[item]['advanced']
 
 - name: Allow lldpad see packets
   pause:
     seconds: "{{ lldp_poll_delay | default(30) }}"
 
 - name: Execute topology collector
+  become: yes
   vars:
     brdict: "{{ ovs_topology[item] | default({}) }}"
   topology:
@@ -92,11 +76,10 @@
     ovs_bridge: "{{ brdict['bridge'] | default(omit) }}"
     host: "{{ ovs_manager_ip | default(omit) }}"
     port: "{{ ovs_manager_port | default(omit) }}"
-    advanced_mode: "{{ ovs_topology[item] is defined and ovs_topology[item]['dpdk'] }}"
+    advanced_mode: "{{ ovs_topology[item] is defined and ovs_topology[item]['advanced'] }}"
     lldp_poll_delay: "{{ lldp_poll_delay | default(30) }}"
   with_items: "{{ interface_list }}"
   register: interface_json
-  ignore_errors: yes
 
 - name: Display topology json when verbosity >= 1, skip otherwise
   debug:
@@ -108,7 +91,7 @@
 
 - name: Write the json output
   template: src=output.j2 dest={{ json_outfile }}
-  delegate_to: 127.0.0.1
+  delegate_to: localhost
 
 - name: Print out the contents of the json output file when verbosity >= 1, skip otherwise
   debug:

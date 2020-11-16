@@ -1,19 +1,32 @@
 ---
-- name: Run the whole thing
+- name: Prepare execution
   hosts: localhost
   gather_facts: no
   remote_user: "{{ remote_usr }}"
   vars_files: ["user_vars.yml"]
-
   tasks:
-  - name: Clean up tmp files from previous runs
-    file: path="{{ temp_dir }}" state=absent
+    - name: Clean up tmp files from previous runs
+      file:
+        path: "{{ temp_dir }}"
+        state: absent
 
-  - name: Make sure tmp dir exists
-    file: path="{{ temp_dir }}" state=directory
+    - name: Make sure tmp dir exists
+      file:
+        path: "{{ temp_dir }}"
+        state: directory
 
-- name: Run topology playbook
-  import_playbook: topology.yml
+    - name: Build inventory
+      include_role:
+        name: tc-inventory
+
+- name: Run topology collection
+  hosts: all
+  gather_facts: no
+  remote_user: "{{ remote_usr }}"
+  vars_files: ["user_vars.yml"]
+  roles:
+    - topology
 
 - name: Run report playbook
   import_playbook: report.yml
+

@@ -1,11 +1,17 @@
 ---
+- name: Collect needed facts
+  setup:
+    gather_subset:
+      - 'min'
+
 - name: Check the status of {{ temp_dir }}
   stat:
     path: "{{ temp_dir }}"
   register: tmp
 
 - name: Verify that {{ temp_dir }} is a directory
-  fail: msg="{{ temp_dir }} is not a directory"
+  fail:
+    msg: "{{ temp_dir }} is not a directory"
   when: not tmp.stat.isdir
 
 - name: Get a list of the files in {{ temp_dir }}
@@ -15,11 +21,14 @@
   register: file_list
 
 - name: Verify that there is at least one json file to process
-  fail: msg="No json files found in {{ temp_dir }}"
+  fail:
+    msg: "No json files found in {{ temp_dir }}"
   when: file_list.matched == 0
 
 - name: Print the list of temp files to process when verbosity >= 1, skip otherwise
-  debug: msg={{ item.path }} verbosity=1
+  debug:
+    msg: "{{ item.path }}"
+    verbosity: 1
   with_items: "{{ file_list.files }}"
 
 - name: Cat all files in {{ temp_dir }}
@@ -28,7 +37,9 @@
   register: content_list
 
 - name: Print the concatenated contents of all files when verbosity >= 1, skip otherwise
-  debug: msg={{ item.stdout }} verbosity=1
+  debug:
+    msg: "{{ item.stdout }}"
+    verbosity: 1
   with_items: "{{ content_list.results }}"
 
 - name: Make sure the ouput report directory exists
@@ -37,7 +48,8 @@
     path: "{{ output_dir }}"
 
 - name: Create output file name
-  set_fact: report_outfile={{ output_dir }}/{{ output_file_prefix }}.{{ ansible_date_time.date }}@{{ansible_date_time.time}}.json
+  set_fact:
+    report_outfile: "{{ output_dir }}/{{ output_file_prefix }}.{{ ansible_date_time.date }}@{{ansible_date_time.time}}.json"
 
 - name: Write out report
   template:
@@ -45,4 +57,6 @@
     dest: "{{ report_outfile }}"
 
 - name: Print out the contents of the report when verbosity >= 1, skip otherwise
-  debug: msg="{{ lookup('file', '{{ report_outfile }}') }}" verbosity=1
+  debug:
+    msg: "{{ lookup('file', '{{ report_outfile }}') }}"
+    verbosity: 1

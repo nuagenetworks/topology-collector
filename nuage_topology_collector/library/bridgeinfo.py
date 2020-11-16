@@ -45,6 +45,10 @@ options:
         default: '6640'
         description:
             - OVS Manager port
+    bridge_mappings:
+        default: {}
+        description:
+            - Dict of physnet/bridge relations from OVS agent
 '''
 
 EXAMPLES = '''
@@ -123,25 +127,31 @@ class OvsdbQuery(object):
 
     def get_ovs_topology(self):
         ovs_topology = dict()
+        bridge_mappings = self.module.params['bridge_mappings']
         bridges = self.ovsdbclient.list_br().execute(check_error=True)
 
         for br in bridges:
-            ifaces = self.ovsdbclient.list_ifaces(br).execute(check_error=True)
-            for ifname in ifaces:
-                bond_slaves = self.check_linux_bond(ifname)
-                for slave in bond_slaves:
-                    ovs_topology[slave] = {'bridge': br, 'dpdk': False}
-                iface = self.ovsdbclient.get_iface(ifname).execute(
+            if br in bridge_mappings.values():
+                ifaces = self.ovsdbclient.list_ifaces(br).execute(
                     check_error=True)
-                ovs_topology[ifname] = {'bridge': br,
-                                        'dpdk': iface.type == 'dpdk'}
+                for ifname in ifaces:
+                    bond_slaves = self.check_linux_bond(ifname)
+                    for slave in bond_slaves:
+                        ovs_topology[slave] = {'bridge': br, 'advanced': False}
+                    iface = self.ovsdbclient.get_iface(ifname).execute(
+                        check_error=True)
+                    self.module.log(str(dir(iface)))
+                    self.module.log(msg=iface.type)
+                    ovs_topology[ifname] = {'bridge': br,
+                                            'advanced': True}
         return ovs_topology
 
 
 def run_module():
     module_args = dict(
         host=dict(type='str', required=False, default='127.0.0.1'),
-        port=dict(type='str', required=False, default='6640')
+        port=dict(type='str', required=False, default='6640'),
+        bridge_mappings=dict(type='dict', required=False, default=dict())
     )
 
     result = dict(

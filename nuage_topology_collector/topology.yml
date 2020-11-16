@@ -1,5 +1,5 @@
 ---
-- hosts: hypervisors
+- hosts: all
   gather_facts: false
   remote_user: "{{ remote_usr }}"
   vars_files: ["user_vars.yml"]

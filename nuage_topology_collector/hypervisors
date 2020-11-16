@@ -1,9 +1,0 @@
-#
-# WARNING: The contents of this file will be overwritten by the
-# get-hypervisors role.
-#
-[hypervisors]
-nova-host-ip hostname=<nova-hypervisor-name> service_host=<nova-hypervisor-service-host-name>
-nova-host-ip hostname=<nova-hypervisor-name> service_host=<nova-hypervisor-service-host-name>
-nova-host-ip hostname=<nova-hypervisor-name> service_host=<nova-hypervisor-service-host-name>
-nova-host-ip hostname=<nova-hypervisor-name> service_host=<nova-hypervisor-service-host-name>

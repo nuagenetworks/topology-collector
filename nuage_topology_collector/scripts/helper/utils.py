@@ -181,10 +181,11 @@ class Utils(object):
             return output_list
 
 
-def run_ansible(hypervisor_file_path, ansible_playbook_path):
+def run_ansible(ansible_playbook_path, hypervisor_file_path=None):
     loader = DataLoader()
+    src = [hypervisor_file_path] if hypervisor_file_path else []
     inventory = InventoryManager(loader=loader,
-                                 sources=[hypervisor_file_path])
+                                 sources=src)
     variable_manager = VariableManager(loader=loader,
                                        inventory=inventory)
     passwords = {}
@@ -198,7 +199,7 @@ def run_ansible(hypervisor_file_path, ansible_playbook_path):
             syntax=False, connection='smart', module_path=None, forks=100,
             remote_user='slotlocker', timeout=10, become=False,
             become_ask_pass=False, ask_pass=False, become_method='sudo',
-            become_user='root', verbosity=0, check=False, diff=False,
+            become_user='root', verbosity=1, check=False, diff=False,
             step=False, start_at_task=None)
         playbook = PlaybookExecutor(
             playbooks=[ansible_playbook_path], inventory=inventory,
@@ -221,7 +222,7 @@ def run_ansible(hypervisor_file_path, ansible_playbook_path):
             remote_user='slotlocker', private_key_file=None,
             ssh_common_args=None, ssh_extra_args=None,
             sftp_extra_args=None, scp_extra_args=None, become=False,
-            become_method='sudo', become_user='root', verbosity=0,
+            become_method='sudo', become_user='root', verbosity=1,
             check=False, diff=False)
 
         playbook = PlaybookExecutor(
