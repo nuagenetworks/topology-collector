@@ -3,7 +3,6 @@
     "compute-hosts": [
 
                 {
-    "hypervisor hostname": "overcloud-SriovPerformanceCompute-0",
     "service_host name": "overcloud-SriovPerformanceCompute-0.localdomain",
     "interfaces": [
 
@@ -76,7 +75,6 @@
 },
 
                 {
-    "hypervisor hostname": "overcloud-OvsCompute-0",
     "service_host name": "overcloud-OvsCompute-0.localdomain",
     "interfaces": [
 
@@ -97,7 +95,6 @@
 },
 
                 {
-    "hypervisor hostname": "overcloud-AvrsReadyCompute-0",
     "service_host name": "overcloud-AvrsReadyCompute-0.localdomain",
     "interfaces": [
 

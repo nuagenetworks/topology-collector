@@ -55,7 +55,7 @@ class TopologyReader(object):
         for compute_host in self.json_data['compute-hosts']:
             compute_host_name = str(self.json_data['compute-hosts']
                                     [compute_host_index]
-                                    ['hypervisor hostname'])
+                                    ['service_host name'])
             msg = "\n Processing Compute Host - " + compute_host_name
 
             total_compute_host_left = total_compute_host - compute_host_index

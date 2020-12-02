@@ -1,12 +1,4 @@
 {
-    "hypervisor hostname": "{{ service_host|default("") }}",
     "service_host name": "{{ service_host|default("") }}",
-    "interfaces": [
-{% set comma = joiner(', ') %}
-{% for interface in interface_json.results -%}
-        {% if interface.stdout is defined and interface.stdout is not none %}
-            {{ comma() }}{{ interface.stdout }}
-        {% endif %}
-{%- endfor %}
-     ]
+    "interfaces": {{ interfaces_json.stdout }}
 }

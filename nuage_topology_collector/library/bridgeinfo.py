@@ -137,13 +137,12 @@ class OvsdbQuery(object):
                 for ifname in ifaces:
                     bond_slaves = self.check_linux_bond(ifname)
                     for slave in bond_slaves:
-                        ovs_topology[slave] = {'bridge': br, 'advanced': False}
+                        ovs_topology[slave] = {'bridge': br,
+                                               'type': None}
                     iface = self.ovsdbclient.get_iface(ifname).execute(
                         check_error=True)
-                    self.module.log(str(dir(iface)))
-                    self.module.log(msg=iface.type)
                     ovs_topology[ifname] = {'bridge': br,
-                                            'advanced': True}
+                                            'type': iface.type}
         return ovs_topology
 
 

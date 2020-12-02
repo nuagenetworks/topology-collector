@@ -15,7 +15,7 @@
   block:
     - name: Set interfaces fact from Nic Switch Agent
       set_fact:
-        interfaces: "{{ agents[inventory_hostname]['configurations']['device_mappings'].values() | list }}"
+        interfaces: "{{ agents[inventory_hostname]['configurations']['device_mappings'].values() | flatten }}"
       when:
         - agents[inventory_hostname]['configurations']['device_mappings'] is defined
 
@@ -28,7 +28,7 @@
       when:
         - agents[inventory_hostname]['configurations']['bridge_mappings'] is defined
 
-    - name: Set ovs_topology fact for OVS hosts
+    - name: Set ovs_topology fact for OVS agent hosts
       set_fact:
         ovs_topology: "{{ brinfo.brinfo | dict_to_items | selectattr('key', 'match', interface_regex)  | list | items_to_dict }}"
       when: brinfo is not skipped
@@ -42,55 +42,35 @@
       set_fact:
         interface_list: "{{ interfaces| default([]) | union(ovs_topology.keys() | list) }}"
 
-- name: Ensure lldpad
-  become: true
-  package:
-    name: lldpad
-    state: present
-
-- name: Ensure lldpad service is running
-  become: true
-  service:
-    name: lldpad
-    enabled: yes
-    state: restarted
-
-- name: Configure lldpad
-  become: true
-  command: lldptool set-lldp -i {{ item }}  adminStatus=rx
-  with_items: "{{ interface_list }}"
-  when:
-    - ovs_topology[item] is not defined or not ovs_topology[item]['advanced']
-
-- name: Allow lldpad see packets
-  pause:
-    seconds: "{{ lldp_poll_delay | default(30) }}"
-
-- name: Execute topology collector
+- name: Collect LLDP and VF info
   become: yes
-  vars:
-    brdict: "{{ ovs_topology[item] | default({}) }}"
+  lldp:
+    interfaces: "{{ interface_list }}"
+    lldp_timeout: "{{ lldp_timeout | default(30) }}"
+    ovs_bridges: "{{ ovs_topology }}"
+  register: lldp
+
+- name: Generate topology information
   topology:
     system_name: "{{ inventory_hostname }}"
-    interface: "{{ item }}"
-    ovs_bridge: "{{ brdict['bridge'] | default(omit) }}"
-    host: "{{ ovs_manager_ip | default(omit) }}"
-    port: "{{ ovs_manager_port | default(omit) }}"
-    advanced_mode: "{{ ovs_topology[item] is defined and ovs_topology[item]['advanced'] }}"
-    lldp_poll_delay: "{{ lldp_poll_delay | default(30) }}"
-  with_items: "{{ interface_list }}"
-  register: interface_json
+    interfaces: "{{ lldp.stdout }}"
+    ovs_bridges: "{{ ovs_topology | default({}) }}"
+  register: interfaces_json
+  delegate_to: localhost
 
 - name: Display topology json when verbosity >= 1, skip otherwise
   debug:
-    msg: "{{ interface_json }}"
+    msg: "{{ interfaces_json }}"
     verbosity: 1
 
 - name: Create output file name
-  set_fact: json_outfile={{ temp_dir }}/{{ inventory_hostname }}.json
+  set_fact:
+    json_outfile: "{{ temp_dir }}/{{ inventory_hostname }}.json"
 
 - name: Write the json output
-  template: src=output.j2 dest={{ json_outfile }}
+  template:
+    src: output.j2
+    dest: "{{ json_outfile }}"
   delegate_to: localhost
 
 - name: Print out the contents of the json output file when verbosity >= 1, skip otherwise

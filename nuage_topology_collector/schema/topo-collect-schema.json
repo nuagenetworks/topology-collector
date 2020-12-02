@@ -19,10 +19,6 @@
     "definitions": {
         "compute-host": {
             "properties": {
-                "hypervisor hostname": {
-                    "type": "string",
-                    "description": "Hypervisor hostname of the compute host"
-                },
                 "service_host name": {
                     "type": "string",
                     "description": "service_host name of the compute host"
@@ -35,7 +31,7 @@
                     }
                 }
             },
-            "required": [ "hypervisor hostname", "service_host name", "interfaces" ]
+            "required": [ "service_host name", "interfaces" ]
         },
         "interface": {
             "properties": {

@@ -2,7 +2,6 @@
     "datetime": "2016-12-17@04:06:05",
     "compute-hosts": [
         {
-            "hypervisor hostname": "andc-ubuntu02.an.nuagenetworks.net",
             "service_host name": "andc-ubuntu02",
             "interfaces": [
 
