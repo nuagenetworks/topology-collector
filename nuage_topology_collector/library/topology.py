@@ -175,6 +175,30 @@ MgmtAddress = core.Struct(
 )
 
 
+class LLDPBaseException(Exception):
+    message = "An unknown exception occurred."
+
+    def __init__(self, **kwargs):
+        try:
+            super(LLDPBaseException, self).__init__(self.message % kwargs)
+            self.msg = self.message % kwargs
+        except Exception:
+            # at least get the core message out if something happened
+            super(LLDPBaseException, self).__init__(self.message)
+
+    def __str__(self):
+        return self.msg
+
+
+class TlvNotFound(LLDPBaseException):
+    message = 'Required %(tlv)s TLV not found in lldp: %(lldp)s.'
+
+
+class SwitchTypeNotSupported(LLDPBaseException):
+    message = ('Could not find any supported switch type '
+               'in System Description TLV: %(tlv)s')
+
+
 class Switch(object):
 
     def __init__(self, name):
@@ -194,9 +218,7 @@ class Switch(object):
         pass
 
     def validate_lldp(self, lldpout):
-        neighborname = "None"
-        neighborip = "None"
-        neighborport = "None"
+        neighborname = neighborip = neighborport = None
 
         for tlv_type, tlv_data in lldpout:
             try:
@@ -212,6 +234,12 @@ class Switch(object):
                     neighborip = addr.address
             elif tlv_type == LLDP_TLV_PORT_ID:
                 neighborport = PortId.parse(data).value
+        if not neighborip:
+            raise TlvNotFound(tlv='Management address (ipv4)',
+                              lldp=lldpout)
+        if not neighborport:
+            raise TlvNotFound(tlv='Port ID',
+                              lldp=lldpout)
         return neighborname, neighborip, neighborport
 
     @staticmethod
@@ -339,18 +367,20 @@ def get_switch(lldp_packet):
     switch = None
     sdtlv = next((tlv for tlv in lldp_packet if
                  tlv[0] == LLDP_TLV_SYS_DESCRIPTION), None)
-    if sdtlv:
-        try:
-            data = bytearray(binascii.a2b_hex(sdtlv[1]))
-            sysdesc = SysDesc.parse(data).value
-            if 'Nokia' in sysdesc:
-                switch = NokiaSwitch()
-            else:
-                cisco = re.search(r"NX-OS|NCS-55", sysdesc)
-                if cisco:
-                    switch = CiscoSwitch(cisco.group(0))
-        finally:
-            return switch
+    if not sdtlv:
+        raise TlvNotFound(tlv='System description',
+                          lldp=lldp_packet)
+    data = bytearray(binascii.a2b_hex(sdtlv[1]))
+    sysdesc = SysDesc.parse(data).value
+    if 'Nokia' in sysdesc:
+        switch = NokiaSwitch()
+    else:
+        cisco = re.search(r"NX-OS|NCS-55", sysdesc)
+        if cisco:
+            switch = CiscoSwitch(cisco.group(0))
+    if not switch:
+        raise SwitchTypeNotSupported(tlv=sysdesc)
+    return switch
 
 
 def main():
@@ -369,33 +399,25 @@ def main():
     startd = datetime.datetime.now()
 
     # Determining the switch type from the LLDP output itself
-    # get_switch() method will return None in case
+    # get_switch() method will raise LLDPBaseException in case
     # - no System Description TLV in lldp packet
     # - System Description TLV does not contain any recognized
     #   switch type patterns
     itf_list = []
     for interface, data in interfaces.items():
-        switch = get_switch(data['lldp'])
-        if not switch:
-            module.fail_json(msg="Could not determine switch type from lldp "
-                                 "for System Name: %s, Interface: %s" %
-                                 (system_name, interface),
-                             stdout=None,
-                             lldpinfo=data.get('lldp'))
-        ovs_bridge = ovs_bridges.get(interface)
         try:
+            switch = get_switch(data['lldp'])
+            ovs_bridge = ovs_bridges.get(interface)
             itf_list.append(switch.generate_json(
                 interface,
                 data.get('lldp'),
                 data.get('vfinfo'),
                 ovs_bridge.get('bridge') if ovs_bridge else None))
-        except Exception as e:
-            module.fail_json(msg="One of the neighbor information is not "
-                                 "present in LLDP Output System Name: %s, "
-                                 "Interface: %s Neighbor Info: %s" %
-                                 (system_name, interface, e.args),
-                             stdout=json.dumps(itf_list, indent=4),
-                             lldpinfo=data.get('lldp'))
+        except LLDPBaseException as e:
+            module.fail_json(msg="Failed to process LLDP data "
+                                 "for interface: %s" % interface,
+                             stdout=None,
+                             stderr=str(e))
 
     module.exit_json(system_name=system_name,
                      interfaces=interfaces,
