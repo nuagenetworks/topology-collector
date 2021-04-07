@@ -326,7 +326,10 @@ def _receive_lldp_packets(sock):
     :param sock: A bound socket
     :return: A list of tuples in the form (lldp_type, lldp_data)
     """
-    pkt = sock.recv(1600)
+    pkt, sa_ll = sock.recvfrom(1600)
+    # Filter outgoing packets
+    if sa_ll[2] == socket.PACKET_OUTGOING:
+        return []
     # Filter invalid packets
     if not pkt or len(pkt) < 14:
         return []
@@ -383,11 +386,15 @@ def _get_lldp_info(interfaces, module):
                                    'trying to get LLDP packet. Skipping '
                                    'this network interface.'.format(
                                        interface[0]))
+                        del interfaces[index]
                     else:
-                        module.log('Found LLDP info for interface: {}'.format(
-                                   interface[0]))
-                    # Remove interface from the list, only need one packet
-                    del interfaces[index]
+                        # Remove interface from the list, if pkt is not
+                        # outgoing/short
+                        if lldp_info[interface[0]]:
+                            module.log(
+                                'Found LLDP info for interface: {}'.format(
+                                    interface[0]))
+                            del interfaces[index]
 
     # Add any interfaces that didn't get a packet as empty lists
     for name, _sock in interfaces:

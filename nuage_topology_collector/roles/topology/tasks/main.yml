@@ -19,28 +19,77 @@
       when:
         - agents[inventory_hostname]['configurations']['device_mappings'] is defined
 
-    - name: Get OVS bridge topologies
-      bridgeinfo:
-        host: "{{ ovs_manager_ip | default(omit) }}"
-        port: "{{ ovs_manager_port | default(omit) }}"
-        bridge_mappings: "{{ agents[inventory_hostname]['configurations']['bridge_mappings'] }}"
-      register: brinfo
+    - name: Set interfaces fact from OVS agent
+      block:
+        - name: Compute iptables rule number
+          become: yes
+          shell: >
+            iptables -L -n --line-numbers | awk '/DROP/{print $1}'
+          register: rulenum
+
+        - name: Allow incoming ovsdb connections
+          become: yes
+          iptables:
+            chain: INPUT
+            protocol: tcp
+            destination: "{{ hostvars[inventory_hostname]['ansible_host'] }}"
+            destination_port: "{{ ovs_manager_port | default(6640) }}"
+            jump: ACCEPT
+            action: insert
+            rule_num: "{{ rulenum.stdout }}"
+
+        - name: Create OVS Manager
+          become: yes
+          command: >
+            ovs-vsctl --timeout=5 --id=@manager -- create Manager
+            "target=\"ptcp:{{ ovs_manager_port | default(6640) }}:{{ hostvars[inventory_hostname]['ansible_host'] }}\""
+            -- add Open_vSwitch . manager_options @manager
+          register: mgr_id
+
+        - name: Get OVS bridge topologies
+          delegate_to: localhost
+          bridgeinfo:
+            host: "{{ hostvars[inventory_hostname]['ansible_host'] }}"
+            port: "{{ ovs_manager_port | default(omit) }}"
+            bridge_mappings: "{{ agents[inventory_hostname]['configurations']['bridge_mappings'] }}"
+          register: brinfo
+
+        - name: Clear OVS Manager
+          become: yes
+          command: ovs-vsctl -- remove Open_vSwitch . manager_options {{ mgr_id.stdout }}
+
+        - name: Remove proviously installed iptables rule
+          become: yes
+          iptables:
+            chain: INPUT
+            protocol: tcp
+            destination: "{{ hostvars[inventory_hostname]['ansible_host'] }}"
+            destination_port: "{{ ovs_manager_port | default(6640) }}"
+            jump: ACCEPT
+            state: absent
+
+        - name: Detect linux bond interfaces
+          become: yes
+          linuxbond:
+            brinfo: "{{ brinfo.brinfo | dict_to_items | items_to_dict }}"
+          register: brinfo
+          when: brinfo is not skipped
+
+        - name: Set ovs_topology fact for OVS agent hosts
+          set_fact:
+            ovs_topology: "{{ brinfo.brinfo | dict_to_items | selectattr('key', 'match', interface_regex)  | list | items_to_dict }}"
+          when: brinfo is not skipped
+
+        - name: Set ovs_topology fact when bridgeinfo skipped
+          set_fact:
+            ovs_topology: {}
+          when: brinfo is skipped
+
+        - name: Set interface_list fact
+          set_fact:
+            interface_list: "{{ interfaces| default([]) | union(ovs_topology.keys() | list) }}"
       when:
         - agents[inventory_hostname]['configurations']['bridge_mappings'] is defined
-
-    - name: Set ovs_topology fact for OVS agent hosts
-      set_fact:
-        ovs_topology: "{{ brinfo.brinfo | dict_to_items | selectattr('key', 'match', interface_regex)  | list | items_to_dict }}"
-      when: brinfo is not skipped
-
-    - name: Set ovs_topology fact when bridgeinfo skipped
-      set_fact:
-        ovs_topology: {}
-      when: brinfo is skipped
-
-    - name: Set interface_list fact
-      set_fact:
-        interface_list: "{{ interfaces| default([]) | union(ovs_topology.keys() | list) }}"
 
 - name: Collect LLDP and VF info
   become: yes

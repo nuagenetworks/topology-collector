@@ -13,8 +13,6 @@
 #  License for the specific language governing permissions and limitations
 #  under the License.
 
-import re
-
 from ansible.module_utils.basic import AnsibleModule
 
 ANSIBLE_METADATA = {
@@ -113,18 +111,6 @@ class OvsdbQuery(object):
                                        "error: %s") % str(e))
         return client
 
-    def check_linux_bond(self, iface):
-        slaves = list()
-        try:
-            bond = open('/proc/net/bonding/%s' % iface).read()
-            for line in bond.splitlines():
-                m = re.match('^Slave Interface: (.*)', line)
-                if m:
-                    slaves.append(m.groups()[0])
-        except IOError:
-            pass
-        return slaves
-
     def get_ovs_topology(self):
         ovs_topology = dict()
         bridge_mappings = self.module.params['bridge_mappings']
@@ -135,10 +121,6 @@ class OvsdbQuery(object):
                 ifaces = self.ovsdbclient.list_ifaces(br).execute(
                     check_error=True)
                 for ifname in ifaces:
-                    bond_slaves = self.check_linux_bond(ifname)
-                    for slave in bond_slaves:
-                        ovs_topology[slave] = {'bridge': br,
-                                               'type': None}
                     iface = self.ovsdbclient.get_iface(ifname).execute(
                         check_error=True)
                     ovs_topology[ifname] = {'bridge': br,

@@ -22,6 +22,7 @@ Requires:   ansible >= 2.1.0
 Requires:   python%{pyver}-keystoneauth1 >= 3.4.0
 Requires:   python%{pyver}-neutronclient  >= 6.3.0
 Requires:   python%{pyver}-novaclient >= 9.1.0
+Requires:   python%{pyver}-ovsdbapp >= 0.8.0
 # Handle python2 exception
 %if %{pyver} == 2
 Requires: python-construct >= 2.8.10
