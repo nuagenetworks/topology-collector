@@ -15,7 +15,7 @@
   block:
     - name: Set interfaces fact from Nic Switch Agent
       set_fact:
-        interfaces: "{{ agents[inventory_hostname]['configurations']['device_mappings'].values() | flatten }}"
+        itfs_from_sriov: "{{ agents[inventory_hostname]['configurations']['device_mappings'].values() | flatten }}"
       when:
         - agents[inventory_hostname]['configurations']['device_mappings'] is defined
 
@@ -85,18 +85,23 @@
             ovs_topology: {}
           when: brinfo is skipped
 
-        - name: Set interface_list fact
+        - name: Set interfaces fact
           set_fact:
-            interface_list: "{{ interfaces| default([]) | union(ovs_topology.keys() | list) }}"
+            itfs_from_ovs: "{{ ovs_topology.keys() }}"
       when:
         - agents[inventory_hostname]['configurations']['bridge_mappings'] is defined
+
+- name: Set interface_list fact
+  vars:
+  set_fact:
+    interface_list: "{{ itfs_from_sriov | default([]) | union(itfs_from_ovs | default([]) | list) }}"
 
 - name: Collect LLDP and VF info
   become: yes
   lldp:
     interfaces: "{{ interface_list }}"
     lldp_timeout: "{{ lldp_timeout | default(30) }}"
-    ovs_bridges: "{{ ovs_topology }}"
+    ovs_bridges: "{{ ovs_topology | default({}) }}"
   register: lldp
 
 - name: Generate topology information
