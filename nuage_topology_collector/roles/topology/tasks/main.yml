@@ -24,7 +24,7 @@
         - name: Compute iptables rule number
           become: yes
           shell: >
-            iptables -L -n --line-numbers | awk '/DROP/{print $1}'
+            iptables -L INPUT -n --line-numbers | awk '/DROP/{print $1}'
           register: rulenum
 
         - name: Allow incoming ovsdb connections

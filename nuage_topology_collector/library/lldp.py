@@ -39,14 +39,6 @@ options:
     description:
       - Dict with interface to bridge mappings
     required: true
-  host:
-    default: '127.0.0.1'
-    description:
-      - OVS Manager address
-  port:
-    default: '6640'
-    description:
-      - OVS Manager port
   lldp_timeout:
     default: 30
     description:
@@ -113,18 +105,10 @@ class RawPromiscuousSockets(object):
         self.module = module
         self.ovs_bridges = module.params['ovs_bridges']
 
-        self._ovsdbclient = None
-
         # A 4-tuple of (interface_name, socket, ifreq object, sink)
         self.interfaces = [(name, self._get_socket(),
                             ifreq(), self._get_iface_sink(name))
                            for name in interface_names]
-
-    @property
-    def ovsdbclient(self):
-        if self._ovsdbclient is None:
-            self._ovsdbclient = get_ovsdb_client(self.module)
-        return self._ovsdbclient
 
     def __enter__(self):
         for interface_name, sock, ifr, sink in self.interfaces:
@@ -220,42 +204,27 @@ class RawPromiscuousSockets(object):
     def _prepare_itf_for_lldp(self, interface, bridge):
         if not bridge:
             return None
-        try:
-            from ovsdbapp.schema.open_vswitch import commands as cmd
-            from ovsdbapp.backend.ovs_idl import command
-        except ImportError:
-            self.module.fail_json(msg="ovsdbapp module is required")
-
         # Setup a lldp sink port and ovs flow
         sink = 'lldp.' + interface
-        with self.ovsdbclient.transaction(check_error=True) as txn:
-            # Add the internal bridge port
-            c = cmd.AddPortCommand(self.ovsdbclient, bridge,
-                                   sink, may_exist=True)
-            txn.add(c)
-
-            c = command.DbSetCommand(self.ovsdbclient, 'Interface', sink,
-                                     ('type', 'internal'))
-            txn.add(c)
-
-        # setup itf
         params = {
+            'vsctl': self.module.get_bin_path("ovs-vsctl", True),
             'ofctl': self.module.get_bin_path("ovs-ofctl", True),
             'ip': self.module.get_bin_path("ip", True),
             'br': bridge,
-            'if': interface,
             'ovsif': sink
         }
-
+        # Setup a lldp sink port
+        cmd = ("%(vsctl)s --may-exist add-port %(br)s %(ovsif)s -- "
+               "set interface %(ovsif)s type=internal" % params)
+        self.module.run_command(cmd, check_rc=True)
         # add flow to lldp port
-        cmd = ("%(ofctl)s dump-ports %(br)s %(if)s" % params)
-        rc, out, err = self.module.run_command(cmd, check_rc=True)
-        b = re.search(r"\s+port\s+(\d+)", out)
+        cmd = ("%(ofctl)s dump-ports-desc %(br)s" % params)
+        _, out, _ = self.module.run_command(cmd, check_rc=True)
+        # in port
+        b = re.search(r'\s+(\d+)\({0}\):'.format(interface), out)
         params['in'] = b.group(1) if b else None
-
-        cmd = ("%(ofctl)s dump-ports %(br)s %(ovsif)s" % params)
-        rc, out, err = self.module.run_command(cmd, check_rc=True)
-        b = re.search(r"\s+port\s+(\d+)", out)
+        # out port
+        b = re.search(r'\s+(\d+)\({0}\):'.format(sink), out)
         params['out'] = b.group(1) if b else None
 
         cmd = ("%(ofctl)s add-flow %(br)s in_port=%(in)s,"
@@ -271,13 +240,16 @@ class RawPromiscuousSockets(object):
 
     def _clean_lldp_config(self, sink, bridge):
         params = {
+            'vsctl': self.module.get_bin_path("ovs-vsctl", True),
             'ofctl': self.module.get_bin_path("ovs-ofctl", True),
             'br': bridge,
+            'ovsif': sink
         }
         command = ("%(ofctl)s del-flows %(br)s "
                    "dl_dst=01:80:c2:00:00:0e" % params)
         self.module.run_command(command, check_rc=True)
-        self.ovsdbclient.del_port(sink, bridge).execute(check_error=True)
+        cmd = ("%(vsctl)s del-port %(br)s %(ovsif)s" % params)
+        self.module.run_command(cmd, check_rc=True)
 
 
 def get_lldp_info(interface_names, module):
@@ -432,32 +404,11 @@ def get_vf_devices(dev_name):
     return devices
 
 
-def get_ovsdb_client(module):
-    try:
-        from ovsdbapp.backend.ovs_idl import connection
-        from ovsdbapp.schema.open_vswitch import impl_idl
-    except ImportError:
-        module.fail_json(msg="ovsdbapp module is required")
-
-    endpoint = ("tcp:%(host)s:%(port)s" % module.params)
-    client = None
-    try:
-        idl = connection.OvsdbIdl.from_server(endpoint, 'Open_vSwitch')
-        connection = connection.Connection(idl=idl, timeout=3)
-        client = impl_idl.OvsdbIdl(connection)
-    except Exception as e:
-        module.fail_json(msg=("could not connect to openvswitch. "
-                              "error: %s") % str(e))
-    return client
-
-
 def main():
     arg_spec = dict(
         interfaces=dict(type='list', required=True),
         ovs_bridges=dict(type='dict', required=True),
         lldp_timeout=dict(type='int', required=False, default=30),
-        host=dict(type='str', required=False, default='127.0.0.1'),
-        port=dict(type='str', required=False, default='6640'),
     )
 
     module = AnsibleModule(argument_spec=arg_spec)
