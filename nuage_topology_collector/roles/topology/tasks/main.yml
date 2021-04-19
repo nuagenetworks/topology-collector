@@ -87,7 +87,7 @@
 
         - name: Set interfaces fact
           set_fact:
-            itfs_from_ovs: "{{ ovs_topology.keys() }}"
+            itfs_from_ovs: "{{ ovs_topology.keys() | list }}"
       when:
         - agents[inventory_hostname]['configurations']['bridge_mappings'] is defined
 
