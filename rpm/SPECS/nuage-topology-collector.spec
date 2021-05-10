@@ -4,6 +4,10 @@
 %else
 %global pyver 2
 %endif
+%global pyver_bin python%{pyver}
+%global pyver_sitelib %{expand:%{python%{pyver}_sitelib}}
+%global pyver_install %{expand:%{py%{pyver}_install}}
+%global pyver_build %{expand:%{py%{pyver}_build}}
 # End of macros for py2/py3 compatibility
 
 Name:       nuage-topology-collector
@@ -18,7 +22,12 @@ Source0:    nuage-topology-collector-%{version}.tar.gz
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildArch:  noarch
-Requires:   ansible >= 2.1.0
+%if %{pyver} == 2
+Requires:       ansible >= 2
+%else
+Requires:       python3dist(ansible) >= 2
+BuildRequires:  /usr/bin/pathfix.py
+%endif
 Requires:   python%{pyver}-keystoneauth1 >= 3.4.0
 Requires:   python%{pyver}-neutronclient  >= 6.3.0
 Requires:   python%{pyver}-novaclient >= 9.1.0
@@ -49,6 +58,12 @@ mkdir -p  %{buildroot}
 %install
 mkdir -p %{buildroot}/opt/nuage/topology-collector/nuage_topology_collector
 cp -rf * %{buildroot}/opt/nuage/topology-collector/nuage_topology_collector
+
+%if %{pyver} == 3
+# Fix shebangs for Python 3-only distros
+# TODO remove this when shebangs workaround will be fixed
+pathfix.py -pni "%{__python3} %{py3_shbang_opts}" %{buildroot}/opt/nuage/topology-collector/nuage_topology_collector/scripts
+%endif
 
 %clean
 rm -rf %{buildroot}

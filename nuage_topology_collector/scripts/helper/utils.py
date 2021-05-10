@@ -12,17 +12,23 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import getpass
+import os
+import subprocess
+import sys
+import traceback
+
 from ansible.parsing.dataloader import DataLoader
 from ansible.vars.manager import VariableManager
 from ansible.inventory.manager import InventoryManager
 from ansible.executor.playbook_executor import PlaybookExecutor
-
-import getpass
-import os
 from oslo_utils import uuidutils
-import subprocess
-import sys
-import traceback
+
+try:
+    from __main__ import display
+except ImportError:
+    from ansible.utils.display import Display
+    display = Display()
 
 
 class OSCredentials(object):
@@ -181,32 +187,40 @@ class Utils(object):
             return output_list
 
 
-def run_ansible(ansible_playbook_path, hypervisor_file_path=None):
+def run_ansible(ansible_playbook_path, opts):
     loader = DataLoader()
-    src = [hypervisor_file_path] if hypervisor_file_path else []
     inventory = InventoryManager(loader=loader,
-                                 sources=src)
+                                 sources=[])
     variable_manager = VariableManager(loader=loader,
                                        inventory=inventory)
     passwords = {}
+    display.verbosity = opts.verbosity
+
     # Since ansible has deprecated the options and introduced
     # new library context starting from 2.8
     try:
         from ansible import context
+        from ansible.cli import CLI
         from ansible.module_utils.common.collections import ImmutableDict
+
         context.CLIARGS = ImmutableDict(
             listtags=False, listtasks=False, listhosts=False,
             syntax=False, connection='smart', module_path=None, forks=100,
             remote_user='slotlocker', timeout=10, become=False,
             become_ask_pass=False, ask_pass=False, become_method='sudo',
-            become_user='root', verbosity=1, check=False, diff=False,
+            become_user='root', verbosity=opts.verbosity,
+            check=opts.check, diff=False, subset=opts.subset,
             step=False, start_at_task=None)
+
+        CLI.get_host_list(inventory, context.CLIARGS['subset'])
         playbook = PlaybookExecutor(
             playbooks=[ansible_playbook_path], inventory=inventory,
             variable_manager=variable_manager, loader=loader,
             passwords=passwords)
+
     except (ImportError, ValueError):
         from collections import namedtuple
+        from ansible.cli import CLI
         Options = namedtuple(
             'Options',
             [
@@ -222,9 +236,9 @@ def run_ansible(ansible_playbook_path, hypervisor_file_path=None):
             remote_user='slotlocker', private_key_file=None,
             ssh_common_args=None, ssh_extra_args=None,
             sftp_extra_args=None, scp_extra_args=None, become=False,
-            become_method='sudo', become_user='root', verbosity=1,
-            check=False, diff=False)
-
+            become_method='sudo', become_user='root', verbosity=opts.verbosity,
+            check=opts.check, diff=False)
+        CLI.get_host_list(inventory, opts.subset)
         playbook = PlaybookExecutor(
             playbooks=[ansible_playbook_path], inventory=inventory,
             variable_manager=variable_manager, loader=loader,

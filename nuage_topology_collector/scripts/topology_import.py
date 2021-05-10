@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Copyright 2017 NOKIA
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -15,6 +16,8 @@ import json
 import logging
 import os
 import sys
+
+from neutronclient.common.exceptions import Conflict
 
 # TODO(OPENSTACK-2892) :
 #      This is temporary code for dealing with py2/py3 compatibility and have
@@ -113,6 +116,25 @@ class TopologyConverter(object):
         return {'pci_slot': virtual_function['pci-id']}
 
 
+def create_or_update(converter, switchport_mapping):
+    try:
+        body = {'switchport_mapping': switchport_mapping}
+        converter.neutron.create_switchport_mapping(body)
+    except Conflict:
+        # mapping for host/slot might exist already
+        # we attempt to retrieve it and do update
+        filters = {
+            'host_id': switchport_mapping.get('host_id'),
+            'pci_slot': switchport_mapping.get('pci_slot')
+        }
+        mappings = converter.neutron.get_switchport_mapping(
+            **filters)['switchport_mappings']
+        if not mappings:
+            raise
+        converter.neutron.update_switchport_mapping(
+            mappings[0]['id'], body)
+
+
 @script_logging.step(description="importing topology")
 def import_interfaces(reader, converter):
     global compute_host_name, interface_of_compute_with_error
@@ -124,10 +146,8 @@ def import_interfaces(reader, converter):
                 if switchport_mapping:
                     LOG.debug("Sending %s",
                               {'switchport_mapping': switchport_mapping})
-
                 try:
-                    body = {'switchport_mapping': switchport_mapping}
-                    converter.neutron.create_switchport_mapping(body)
+                    create_or_update(converter, switchport_mapping)
                     LOG.debug("Successfully imported the SwitchPort Mapping")
                 except Exception as e:
                     with script_logging.indentation():

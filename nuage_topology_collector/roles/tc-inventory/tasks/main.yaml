@@ -24,14 +24,14 @@
 
 - name: set overcloud hosts fact
   set_fact:
-    overcloud_hosts: "{{ registered_overcloud_nodes.stdout }}"
+    overcloud_hosts: "{{ registered_overcloud_nodes.stdout | default({}) }}"
 
 - name: set overcloud agents fact
   set_fact:
-    overcloud_agents: "{{ registered_overcloud_agents.stdout }}"
+    overcloud_agents: "{{ registered_overcloud_agents.stdout | default({}) }}"
 
 - name: Add overcloud nodes with Neutron agents to ansible
-  with_dict: '{{ overcloud_hosts | default({}) }}'
+  with_dict: '{{ overcloud_hosts }}'
   add_host:
     name: '{{ item.key }}'
     groups: "tc_hosts"
