@@ -218,7 +218,7 @@ class Switch(object):
         pass
 
     def validate_lldp(self, lldpout):
-        neighborname = neighborip = neighborport = None
+        name = addr = port = None
 
         for tlv_type, tlv_data in lldpout:
             try:
@@ -227,20 +227,20 @@ class Switch(object):
                 # invalid data, not in hex, skipping
                 continue
             if tlv_type == LLDP_TLV_SYS_NAME:
-                neighborname = SysName.parse(data).value
+                name = SysName.parse(data)
             elif tlv_type == LLDP_TLV_MGMT_ADDRESS:
-                addr = MgmtAddress.parse(data)
-                if addr.family == 'ipv4':
-                    neighborip = addr.address
+                mgmtaddr = MgmtAddress.parse(data)
+                if mgmtaddr.family == 'ipv4':
+                    addr = mgmtaddr
             elif tlv_type == LLDP_TLV_PORT_ID:
-                neighborport = PortId.parse(data).value
-        if not neighborip:
+                port = PortId.parse(data)
+        if not addr:
             raise TlvNotFound(tlv='Management address (ipv4)',
                               lldp=lldpout)
-        if not neighborport:
+        if not port:
             raise TlvNotFound(tlv='Port ID',
                               lldp=lldpout)
-        return neighborname, neighborip, neighborport
+        return name, addr, port
 
     @staticmethod
     def create_system_json(vfinfo, neighborname, neighborip,
@@ -331,11 +331,14 @@ class NokiaSwitch(Switch):
         return scheme, connector
 
     def generate_json(self, interface, lldpinfo, vfinfo, bridge=None):
-        neighborname, neighborip, neighborport = self.validate_lldp(lldpinfo)
-        neighborport = self.convert_ifindex_to_ifname(neighborport)
+        name, addr, port = self.validate_lldp(lldpinfo)
+        if 'local' in port.subtype:
+            neighborport = self.convert_ifindex_to_ifname(port.value)
+        else:
+            neighborport = port.value
 
-        return self.create_system_json(vfinfo, neighborname,
-                                       neighborip, neighborport, bridge)
+        return self.create_system_json(vfinfo, name.value,
+                                       addr.address, neighborport, bridge)
 
 
 class CiscoSwitch(Switch):
@@ -356,11 +359,11 @@ class CiscoSwitch(Switch):
             return "None"
 
     def generate_json(self, interface, lldpinfo, vfinfo, bridge=None):
-        neighborname, neighborip, neighborport = self.validate_lldp(lldpinfo)
+        name, addr, port = self.validate_lldp(lldpinfo)
         # just get the port number
-        neighborport = self.retrieve_port_number(neighborport)
-        return self.create_system_json(vfinfo, neighborname,
-                                       neighborip, neighborport, bridge)
+        neighborport = self.retrieve_port_number(port.value)
+        return self.create_system_json(vfinfo, name.value,
+                                       addr.address, neighborport, bridge)
 
 
 def get_switch(lldp_packet):
@@ -372,7 +375,7 @@ def get_switch(lldp_packet):
                           lldp=lldp_packet)
     data = bytearray(binascii.a2b_hex(sdtlv[1]))
     sysdesc = SysDesc.parse(data).value
-    if 'Nokia' in sysdesc:
+    if re.search(r"Nokia|SRLinux|srlinux", sysdesc):
         switch = NokiaSwitch()
     else:
         cisco = re.search(r"NX-OS|NCS-55", sysdesc)
