@@ -71,6 +71,7 @@ class NeutronClient(object):
     def __init__(self):
         self.client = None
         self.switchport_mapping_path = "/net-topology/switchport_mappings"
+        self.switchport_mappings_path = "/net-topology/switchport_mappings/%s"
 
     def authenticate(self):
         from neutronclient.neutron import client as neutron_client
@@ -88,9 +89,14 @@ class NeutronClient(object):
                 auth_url=keystone_client.credentials.auth_url))
         return self
 
-    def get_switchport_mapping(self):
+    def get_switchport_mapping(self, retrieve_all=True, **_params):
         return self.client.list('switchport_mappings',
-                                self.switchport_mapping_path)
+                                self.switchport_mapping_path,
+                                retrieve_all,
+                                **_params)
 
     def create_switchport_mapping(self, body):
         return self.client.post(self.switchport_mapping_path, body)
+
+    def update_switchport_mapping(self, id, body):
+        return self.client.put(self.switchport_mappings_path % id, body)
