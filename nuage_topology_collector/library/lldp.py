@@ -166,10 +166,12 @@ class RawPromiscuousSockets(object):
         does not work for interfaces under OVS bridge.
         Black magic using kernel BPF filter follows
 
-        /sbin/tcpdump -i <itf> -ddd -s 1600 'ether proto 0x88cc'
+        /sbin/tcpdump -i <itf> -ddd -s 1600 \
+            'ether proto 0x88cc and ether dst 01:80:c2:00:00:0e'
         """
-        filter = ['4\n', '40 0 0 12\n',
-                  '21 0 1 35020\n', '6 0 0 1600\n', '6 0 0 0\n']
+        filter = ['8\n', '40 0 0 12\n', '21 0 5 35020\n', '32 0 0 2\n',
+                  '21 0 3 3254779918\n', '40 0 0 0\n', '21 0 1 384\n',
+                  '6 0 0 1600\n', '6 0 0 0\n']
 
         # Allocate BPF instructions
         size = int(filter[0])
