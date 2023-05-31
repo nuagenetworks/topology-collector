@@ -14,6 +14,7 @@
 #  under the License.
 import binascii
 import ctypes
+import errno
 import fcntl
 import json
 import os
@@ -131,6 +132,17 @@ class RawPromiscuousSockets(object):
                 # Attach kernel packet filter for lldp protocol
                 bpf = self._get_bpf_filter()
                 sock.setsockopt(SOL_SOCKET, SO_ATTACH_FILTER, bpf)
+
+                # Drain the queue
+                while True:
+                    try:
+                        sock.recv(1, socket.MSG_DONTWAIT)
+                    except socket.error as serr:
+                        if serr.errno == errno.EWOULDBLOCK:
+                            # assume no data to read
+                            break
+                        else:
+                            raise
 
             except Exception:
                 self.module.log('Failed to open all RawPromiscuousSockets, '
