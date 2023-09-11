@@ -7,7 +7,11 @@
 - name: fetch overcloud node names and IPs
   shell: >
       source {{ undercloud_env_file }};
-      $(command -v python3 || command -v python2) /tmp/get-overcloud-nodes.py
+      if python3 -c 'import novaclient.client' > /dev/null 2>&1; then
+          python3 /tmp/get-overcloud-nodes.py
+      else
+          python2 /tmp/get-overcloud-nodes.py
+      fi
   register: registered_overcloud_nodes
 
 - name: copy get-overcloud-agents.py to undercloud
@@ -16,10 +20,14 @@
     dest: '/tmp/get-overcloud-agents.py'
     mode: 0755
 
-- name: fetch agents
+- name: fetch overcloud agents
   shell: >
       source {{ osc_env_file }};
-      $(command -v python3 || command -v python2) /tmp/get-overcloud-agents.py
+      if python3 -c 'import neutronclient.v2_0.client' > /dev/null 2>&1; then
+          python3 /tmp/get-overcloud-agents.py
+      else
+          python2 /tmp/get-overcloud-agents.py
+      fi
   register: registered_overcloud_agents
 
 - name: set overcloud hosts fact
