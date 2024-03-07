@@ -46,17 +46,43 @@
             -- add Open_vSwitch . manager_options @manager
           register: mgr_id
 
-        - name: Get OVS bridge topologies
-          delegate_to: localhost
-          bridgeinfo:
-            host: "{{ hostvars[inventory_hostname]['ansible_host'] }}"
-            port: "{{ ovs_manager_port | default(omit) }}"
-            bridge_mappings: "{{ agents[inventory_hostname]['configurations']['bridge_mappings'] }}"
+        - name: Copy brinfo script
+          copy:
+            src: brinfo.py
+            dest: /tmp/brinfo.py
+            mode: '0755'
+
+        - name: Copy script to container
+          become: yes
+          command: podman cp /tmp/brinfo.py neutron_ovs_agent:/tmp/brinfo.py
+
+        - name: Execute brinfo script
+          become: yes
+          command: podman exec -it neutron_ovs_agent /tmp/brinfo.py -h {{ hostvars[inventory_hostname]['ansible_host'] }} \
+            -p {{ ovs_manager_port | default(6640) }} -m '{{ agents[inventory_hostname]["configurations"]["bridge_mappings"]  | to_json }}'
           register: brinfo
 
+        - name: Detect linux bond interfaces
+          become: yes
+          vars:
+            br: "{{ brinfo.stdout | from_json }}"
+          linuxbond:
+            brinfo: "{{ br.brinfo | dict_to_items | items_to_dict }}"
+          register: brinfo
+          when: brinfo | length > 0
+
+        - name: Set ovs_topology fact for OVS agent hosts
+          set_fact:
+            ovs_topology: "{{ brinfo.brinfo }}"
+
+        - name: Set interfaces fact
+          set_fact:
+            itfs_from_ovs: "{{ brinfo.brinfo | map(attribute='ifaces') | flatten | unique | list }}"
+      always:
         - name: Clear OVS Manager
           become: yes
           command: ovs-vsctl -- remove Open_vSwitch . manager_options {{ mgr_id.stdout }}
+          when: mgr_id is defined
 
         - name: Remove proviously installed iptables rule
           become: yes
@@ -67,27 +93,6 @@
             destination_port: "{{ ovs_manager_port | default(6640) }}"
             jump: ACCEPT
             state: absent
-
-        - name: Detect linux bond interfaces
-          become: yes
-          linuxbond:
-            brinfo: "{{ brinfo.brinfo | dict_to_items | items_to_dict }}"
-          register: brinfo
-          when: brinfo is not skipped
-
-        - name: Set ovs_topology fact for OVS agent hosts
-          set_fact:
-            ovs_topology: "{{ brinfo.brinfo | dict_to_items | selectattr('key', 'match', interface_regex)  | list | items_to_dict }}"
-          when: brinfo is not skipped
-
-        - name: Set ovs_topology fact when bridgeinfo skipped
-          set_fact:
-            ovs_topology: {}
-          when: brinfo is skipped
-
-        - name: Set interfaces fact
-          set_fact:
-            itfs_from_ovs: "{{ ovs_topology.keys() | list }}"
       when:
         - agents[inventory_hostname]['configurations']['bridge_mappings'] is defined
 

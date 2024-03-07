@@ -41,7 +41,7 @@ options:
     required: true
   ovs_bridges:
     description:
-      - Dict of interface to bridge mappings
+      - List of interface to bridge mappings
     required: false
 '''
 
@@ -245,7 +245,7 @@ class Switch(object):
     @staticmethod
     def create_system_json(vfinfo, neighborname, neighborip,
                            neighborport, bridge=None):
-        res = vfinfo
+        res = vfinfo.copy()
         entry = {
             'neighbor-system-name': neighborname,
             'neighbor-system-mgmt-ip': neighborip,
@@ -390,7 +390,7 @@ def main():
     arg_spec = dict(
         system_name=dict(required=True),
         interfaces=dict(type='dict', required=True),
-        ovs_bridges=dict(type='dict', required=False)
+        ovs_bridges=dict(type='list', required=False)
     )
 
     module = AnsibleModule(argument_spec=arg_spec)
@@ -407,20 +407,44 @@ def main():
     # - System Description TLV does not contain any recognized
     #   switch type patterns
     itf_list = []
-    for interface, data in interfaces.items():
-        try:
-            switch = get_switch(data['lldp'])
-            ovs_bridge = ovs_bridges.get(interface)
-            itf_list.append(switch.generate_json(
-                interface,
-                data.get('lldp'),
-                data.get('vfinfo'),
-                ovs_bridge.get('bridge') if ovs_bridge else None))
-        except LLDPBaseException as e:
-            module.fail_json(msg="Failed to process LLDP data "
-                                 "for interface: %s" % interface,
-                             stdout=None,
-                             stderr=str(e))
+    fl = [item for row in [
+        el.get('ifaces') for el in ovs_bridges] for item in row]
+    duplicates = len(fl) != len(set(fl))
+    for el in ovs_bridges:
+        ovs_br = el.get('bridge')
+        for interface in el.get('ifaces', []):
+            data = interfaces.get(interface)
+            try:
+                switch = get_switch(data['lldp'])
+                report_item = switch.generate_json(
+                    interface,
+                    data.get('lldp'),
+                    data.get('vfinfo'),
+                    ovs_br if ovs_br else None)
+                if duplicates:
+                    report_item['name'] = interface + '-' + ovs_br
+                itf_list.append(report_item)
+            except LLDPBaseException as e:
+                module.fail_json(msg="Failed to process LLDP data "
+                                     "for interface: %s" % interface,
+                                 stdout=None,
+                                 stderr=str(e))
+
+    for interface in interfaces:
+        if interface not in fl:
+            data = interfaces.get(interface)
+            try:
+                switch = get_switch(data['lldp'])
+                itf_list.append(switch.generate_json(
+                    interface,
+                    data.get('lldp'),
+                    data.get('vfinfo'),
+                    None))
+            except LLDPBaseException as e:
+                module.fail_json(msg="Failed to process LLDP data "
+                                     "for interface: %s" % interface,
+                                 stdout=None,
+                                 stderr=str(e))
 
     module.exit_json(system_name=system_name,
                      interfaces=interfaces,

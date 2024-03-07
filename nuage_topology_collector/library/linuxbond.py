@@ -90,13 +90,14 @@ def run_module():
     if module.check_mode:
         module.exit_json(**result)
 
-    bridgeinfo = dict()
+    bridgeinfo = list()
     for k, v in module.params['brinfo'].items():
-        bridgeinfo[k] = v
-        slaves = check_linux_bond(k)
-        for slave in slaves:
-            bridgeinfo[slave] = {'bridge': v.get('bridge'),
-                                 'type': None}
+        for el in v:
+            slaves = check_linux_bond(el.get('iface'))
+            bridgeinfo.append({'bridge': k,
+                               'ifaces': slaves or [el.get('iface')],
+                               'parent': el.get('parent'),
+                               'type': el.get('type')})
 
     result['brinfo'] = bridgeinfo
     module.exit_json(**result)

@@ -38,7 +38,7 @@ options:
     required: true
   ovs_bridges:
     description:
-      - Dict with interface to bridge mappings
+      - List with interface to bridge mappings
     required: true
   lldp_timeout:
     default: 30
@@ -161,7 +161,7 @@ class RawPromiscuousSockets(object):
                 fcntl.ioctl(sock.fileno(), SIOCSIFFLAGS, ifr)
                 sock.close()
                 if sink:
-                    bridge = self.ovs_bridges.get(name)
+                    bridge = self.get_bridge(name)
                     self._clean_lldp_config(sink,
                                             bridge.get('bridge'))
             except Exception:
@@ -170,6 +170,10 @@ class RawPromiscuousSockets(object):
 
     def _get_socket(self):
         return socket.socket(socket.AF_PACKET, socket.SOCK_RAW, self.protocol)
+
+    def get_bridge(self, ifname):
+        return next((br for br in self.ovs_bridges if ifname in br['ifaces']),
+                    None)
 
     def _get_bpf_filter(self):
         """ Kernel packet filter for lldp proto.
@@ -204,7 +208,7 @@ class RawPromiscuousSockets(object):
 
     def _get_iface_sink(self, interface):
         sink = None
-        bridge = self.ovs_bridges.get(interface)
+        bridge = self.get_bridge(interface)
         try:
             if bridge and bridge['type'] == 'dpdk':
                 sink = self._prepare_itf_for_lldp(interface,
@@ -421,7 +425,7 @@ def get_vf_devices(dev_name):
 def main():
     arg_spec = dict(
         interfaces=dict(type='list', required=True),
-        ovs_bridges=dict(type='dict', required=True),
+        ovs_bridges=dict(type='list', required=True),
         lldp_timeout=dict(type='int', required=False, default=30),
     )
 
