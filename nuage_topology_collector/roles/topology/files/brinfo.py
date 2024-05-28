@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2
 #  Copyright 2020 NOKIA
 #
 #  Licensed under the Apache License, Version 2.0 (the "License"); you may
