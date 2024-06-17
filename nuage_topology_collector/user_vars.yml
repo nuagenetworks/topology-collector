@@ -5,7 +5,7 @@
   temp_dir: /tmp/topo-coll/tmp/
   output_dir: /tmp/topo-coll/reports
   output_file_prefix: topo_report
-  interface_regex: 'en|dpdk'
+  interface_regex: '^en|^dpdk|^p[1-9]+p[1-9]+'
   remote_usr: heat-admin
   osc_env_file: /home/stack/overcloudrc
   undercloud_env_file: /home/stack/stackrc
