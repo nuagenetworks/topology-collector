@@ -21,15 +21,30 @@
 
     - name: Set interfaces fact from OVS agent
       block:
+        - name: Set facts for ipv4
+          set_fact:
+            ipversion: 'ipv4'
+            iptables: 'iptables'
+            iphost: "{{ hostvars[inventory_hostname]['ansible_host'] }}"
+          when: hostvars[inventory_hostname]['ansible_host'] | ipv4
+
+        - name: set facts for ipv6
+          set_fact:
+            ipversion: 'ipv6'
+            iptables: 'ip6tables'
+            iphost: "[{{ hostvars[inventory_hostname]['ansible_host'] }}]"
+          when: not hostvars[inventory_hostname]['ansible_host'] | ipv4
+
         - name: Compute iptables rule number
           become: yes
           shell: >
-            iptables -L INPUT -n --line-numbers | awk '/DROP/{print $1}'
+            {{ iptables }} -L INPUT -n --line-numbers | awk '/DROP/{print $1}'
           register: rulenum
 
         - name: Allow incoming ovsdb connections
           become: yes
           iptables:
+            ip_version: "{{ ipversion }}"
             chain: INPUT
             protocol: tcp
             destination: "{{ hostvars[inventory_hostname]['ansible_host'] }}"
@@ -42,7 +57,7 @@
           become: yes
           command: >
             ovs-vsctl --timeout=5 --id=@manager -- create Manager
-            "target=\"ptcp:{{ ovs_manager_port | default(6640) }}:{{ hostvars[inventory_hostname]['ansible_host'] }}\""
+            "target=\"ptcp:{{ ovs_manager_port | default(6640) }}:{{ iphost }}\""
             -- add Open_vSwitch . manager_options @manager
           register: mgr_id
 
@@ -58,7 +73,7 @@
 
         - name: Execute brinfo script
           become: yes
-          command: podman exec -it neutron_ovs_agent /tmp/brinfo.py -h {{ hostvars[inventory_hostname]['ansible_host'] }} \
+          command: podman exec -it neutron_ovs_agent /tmp/brinfo.py -h {{ iphost }} \
             -p {{ ovs_manager_port | default(6640) }} -m '{{ agents[inventory_hostname]["configurations"]["bridge_mappings"]  | to_json }}'
           register: brinfo
 
@@ -87,6 +102,7 @@
         - name: Remove proviously installed iptables rule
           become: yes
           iptables:
+            ip_version: "{{ ipversion }}"
             chain: INPUT
             protocol: tcp
             destination: "{{ hostvars[inventory_hostname]['ansible_host'] }}"
