@@ -34,6 +34,9 @@ except (ImportError, ValueError):
     from helper.osclient import NeutronClient
     from helper.utils import Utils
 
+# Fields compared when deciding whether an existing mapping needs updating.
+_MAPPING_COMPARE_FIELDS = ('switch_info', 'switch_id', 'port_id', 'bridge')
+
 
 script_name = 'topology_import'
 LOG = logging.getLogger(script_name)
@@ -116,16 +119,73 @@ class TopologyConverter(object):
         return {'pci_slot': virtual_function['pci-id']}
 
 
-def create_or_update(converter, switchport_mapping):
+def load_existing_mappings(neutron_client):
+    """Fetch all existing switchport mappings from Neutron into a lookup dict.
+
+    The dict is keyed by (host_id, pci_slot) so individual mappings can be
+    resolved in O(1) without additional API calls during the import loop.
+    This pre-fetch is the key optimisation: it avoids a failed POST + GET for
+    every VF that was already imported in a previous run (e.g. all pre-existing
+    SR-IOV compute nodes), reducing thousands of API round-trips to a single
+    bulk GET.
+    """
+    LOG.user("Pre-loading existing switchport mappings from Neutron ...")
+    existing = {}
+    mappings = neutron_client.get_switchport_mapping()['switchport_mappings']
+    for m in mappings:
+        key = (m.get('host_id'), m.get('pci_slot'))
+        existing[key] = m
+    LOG.user("Loaded %d existing switchport mapping(s)." % len(existing))
+    return existing
+
+
+def create_or_update(converter, switchport_mapping, existing_mappings=None):
+    """Create or update a single switchport mapping.
+
+    When *existing_mappings* (the dict returned by :func:`load_existing_mappings`)
+    is supplied the function can avoid unnecessary network traffic:
+
+    * Mapping unchanged  -> skip entirely (no API call).
+    * Mapping changed    -> PUT directly (no speculative POST that would fail).
+    * Mapping is new     -> POST as before.
+
+    When *existing_mappings* is *None* the original behaviour is preserved for
+    backwards compatibility.
+    """
+    host_id = switchport_mapping.get('host_id')
+    pci_slot = switchport_mapping.get('pci_slot')
+    body = {'switchport_mapping': switchport_mapping}
+
+    if existing_mappings is not None:
+        key = (host_id, pci_slot)
+        if key in existing_mappings:
+            existing = existing_mappings[key]
+            # Only update when at least one tracked field has changed.
+            changed = any(
+                switchport_mapping.get(f) != existing.get(f)
+                for f in _MAPPING_COMPARE_FIELDS
+            )
+            if not changed:
+                LOG.debug(
+                    "Skipping unchanged mapping for host_id=%s pci_slot=%s",
+                    host_id, pci_slot)
+                return
+            # Values differ - go straight to PUT (skip the doomed POST).
+            LOG.debug(
+                "Updating changed mapping for host_id=%s pci_slot=%s",
+                host_id, pci_slot)
+            converter.neutron.update_switchport_mapping(existing['id'], body)
+            return
+        # Not found in the pre-fetched cache - fall through to POST.
+
     try:
-        body = {'switchport_mapping': switchport_mapping}
         converter.neutron.create_switchport_mapping(body)
     except Conflict:
-        # mapping for host/slot might exist already
-        # we attempt to retrieve it and do update
+        # Mapping appeared between the pre-fetch and now (or no cache was
+        # used).  Retrieve and update it to stay consistent.
         filters = {
-            'host_id': switchport_mapping.get('host_id'),
-            'pci_slot': switchport_mapping.get('pci_slot')
+            'host_id': host_id,
+            'pci_slot': pci_slot
         }
         mappings = converter.neutron.get_switchport_mapping(
             **filters)['switchport_mappings']
@@ -138,6 +198,12 @@ def create_or_update(converter, switchport_mapping):
 @script_logging.step(description="importing topology")
 def import_interfaces(reader, converter):
     global compute_host_name, interface_of_compute_with_error
+
+    # Pre-load all existing mappings once so that create_or_update() can skip
+    # or directly update each VF without issuing a speculative POST that would
+    # fail (and log an error) for every already-imported port.
+    existing_mappings = load_existing_mappings(converter.neutron)
+
     for interface in reader.interfaces():
         with script_logging.indentation():
             mapping = []
@@ -147,7 +213,8 @@ def import_interfaces(reader, converter):
                     LOG.debug("Sending %s",
                               {'switchport_mapping': switchport_mapping})
                 try:
-                    create_or_update(converter, switchport_mapping)
+                    create_or_update(converter, switchport_mapping,
+                                     existing_mappings)
                     LOG.debug("Successfully imported the SwitchPort Mapping")
                 except Exception as e:
                     with script_logging.indentation():

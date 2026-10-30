@@ -7,11 +7,7 @@
 - name: fetch overcloud node names and IPs
   shell: >
       source {{ undercloud_env_file }};
-      if python3 -c 'import novaclient.client' > /dev/null 2>&1; then
-          python3 /tmp/get-overcloud-nodes.py
-      else
-          python2 /tmp/get-overcloud-nodes.py
-      fi
+      $(command -v python2 || command -v python3) /tmp/get-overcloud-nodes.py
   register: registered_overcloud_nodes
 
 - name: copy get-overcloud-agents.py to undercloud
@@ -20,14 +16,10 @@
     dest: '/tmp/get-overcloud-agents.py'
     mode: 0755
 
-- name: fetch overcloud agents
+- name: fetch agents
   shell: >
       source {{ osc_env_file }};
-      if python3 -c 'import neutronclient.v2_0.client' > /dev/null 2>&1; then
-          python3 /tmp/get-overcloud-agents.py
-      else
-          python2 /tmp/get-overcloud-agents.py
-      fi
+      $(command -v python2 || command -v python3) /tmp/get-overcloud-agents.py
   register: registered_overcloud_agents
 
 - name: set overcloud hosts fact
@@ -44,7 +36,7 @@
     name: '{{ item.key }}'
     groups: "tc_hosts"
     ansible_host: '{{ item.value }}'
-    ansible_user: "{{ overcloud_user | default('heat-admin') }}"
+    ansible_user: "{{ remote_usr | default(overcloud_user) | default('heat-admin') }}"
     hostname: "{{ overcloud_agents[item.key]['host'] }}"
     service_host: "{{ overcloud_agents[item.key]['host'] }}"
   when: item.key in overcloud_agents.keys()

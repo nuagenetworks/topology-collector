@@ -429,6 +429,13 @@ def main():
 
     interfaces = module.params['interfaces']
 
+    # Some hosts (for example pure control-plane nodes) may not expose any
+    # interfaces matching topology collection filters.
+    if not interfaces:
+        module.exit_json(interfaces=[],
+                         stdout=json.dumps({}, indent=4),
+                         changed=False)
+
     lldpinfo = get_lldp_info(interfaces, module)
     itfinfo = dict()
     for interface in interfaces:
