@@ -1,88 +1,51 @@
 ---
+- name: Resolve host connection address
+  set_fact:
+    tc_connection_host: "{{ hostvars[inventory_hostname]['ansible_host'] | default(inventory_hostname) }}"
+
+- name: Resolve Neutron agent lookup key
+  set_fact:
+    tc_agent_key: "{{ (hostvars[inventory_hostname]['hostname'] | default(hostvars[inventory_hostname]['service_host'] | default(inventory_hostname))) | regex_replace('\\.localdomain$', '') | regex_replace('\\..*$', '') }}"
+
 - name: Wait for ssh to be ready
   wait_for:
     port: "22"
-    host: "{{ hostvars[inventory_hostname].ansible_host }}"
+    host: "{{ tc_connection_host }}"
     search_regex: OpenSSH
     delay: 1
   delegate_to: localhost
 
 - name: Set agents fact
   set_fact:
-    agents: "{{ hostvars['localhost'].overcloud_agents }}"
+    agents: "{{ hostvars['localhost'].overcloud_agents | default({}) }}"
 
 - name: Generate interface_list
   block:
+    - name: Log agent presence for current host
+      debug:
+        msg: "Host {{ inventory_hostname }} present in agents: {{ inventory_hostname in agents }}"
+
+    - name: Log skip reason when host is missing in agents
+      debug:
+        msg: "Skipping Nic Switch and OVS mapping checks because {{ inventory_hostname }} is not present in overcloud_agents"
+      when: inventory_hostname not in agents
+
     - name: Set interfaces fact from Nic Switch Agent
       set_fact:
-        itfs_from_sriov: "{{ agents[inventory_hostname]['configurations']['device_mappings'].values() | flatten }}"
+        itfs_from_sriov: "{{ agents[tc_agent_key]['configurations']['device_mappings'].values() | flatten }}"
       when:
-        - agents[inventory_hostname]['configurations']['device_mappings'] is defined
+        - agents is defined
+        - tc_agent_key in agents
+        - agents[tc_agent_key]['configurations'] is defined
+        - agents[tc_agent_key]['configurations']['device_mappings'] is defined
 
     - name: Set interfaces fact from OVS agent
       block:
-        - name: Set facts for ipv4
-          set_fact:
-            ipversion: 'ipv4'
-            iptables: 'iptables'
-            iphost: "{{ hostvars[inventory_hostname]['ansible_host'] }}"
-          when: hostvars[inventory_hostname]['ansible_host'] | ipv4
-
-        - name: set facts for ipv6
-          set_fact:
-            ipversion: 'ipv6'
-            iptables: 'ip6tables'
-            iphost: "[{{ hostvars[inventory_hostname]['ansible_host'] }}]"
-          when: not hostvars[inventory_hostname]['ansible_host'] | ipv4
-
-        - name: Compute iptables rule number
-          become: yes
-          shell: >
-            {{ iptables }} -L INPUT -n --line-numbers | awk '/DROP/{print $1}'
-          register: rulenum
-
-        - name: Allow incoming ovsdb connections
-          become: yes
-          iptables:
-            ip_version: "{{ ipversion }}"
-            chain: INPUT
-            protocol: tcp
-            destination: "{{ hostvars[inventory_hostname]['ansible_host'] }}"
-            destination_port: "{{ ovs_manager_port | default(6640) }}"
-            jump: ACCEPT
-            action: insert
-            rule_num: "{{ rulenum.stdout }}"
-
-        - name: Create OVS Manager
-          become: yes
-          command: >
-            ovs-vsctl --timeout=5 --id=@manager -- create Manager
-            "target=\"ptcp:{{ ovs_manager_port | default(6640) }}:{{ iphost }}\""
-            -- add Open_vSwitch . manager_options @manager
-          register: mgr_id
-
         - name: Get OVS bridge topologies
-          delegate_to: localhost
+          become: yes
           bridgeinfo:
-            host: "{{ iphost }}"
-            port: "{{ ovs_manager_port | default(omit) }}"
-            bridge_mappings: "{{ agents[inventory_hostname]['configurations']['bridge_mappings'] }}"
+            bridge_mappings: "{{ agents[tc_agent_key]['configurations']['bridge_mappings'] }}"
           register: brinfo
-
-        - name: Clear OVS Manager
-          become: yes
-          command: ovs-vsctl -- remove Open_vSwitch . manager_options {{ mgr_id.stdout }}
-
-        - name: Remove proviously installed iptables rule
-          become: yes
-          iptables:
-            ip_version: "{{ ipversion }}"
-            chain: INPUT
-            protocol: tcp
-            destination: "{{ hostvars[inventory_hostname]['ansible_host'] }}"
-            destination_port: "{{ ovs_manager_port | default(6640) }}"
-            jump: ACCEPT
-            state: absent
 
         - name: Detect linux bond interfaces
           become: yes
@@ -105,7 +68,10 @@
           set_fact:
             itfs_from_ovs: "{{ ovs_topology.keys() | list }}"
       when:
-        - agents[inventory_hostname]['configurations']['bridge_mappings'] is defined
+        - agents is defined
+        - tc_agent_key in agents
+        - agents[tc_agent_key]['configurations'] is defined
+        - agents[tc_agent_key]['configurations']['bridge_mappings'] is defined
 
 - name: Set interface_list fact
   vars:
@@ -119,31 +85,37 @@
     lldp_timeout: "{{ lldp_timeout | default(30) }}"
     ovs_bridges: "{{ ovs_topology | default({}) }}"
   register: lldp
+  when: interface_list | length > 0
 
 - name: Generate topology information
   topology:
     system_name: "{{ inventory_hostname }}"
-    interfaces: "{{ lldp.stdout }}"
+    interfaces: "{{ lldp.stdout | default('{}') }}"
     ovs_bridges: "{{ ovs_topology | default({}) }}"
   register: interfaces_json
   delegate_to: localhost
+  when: interface_list | length > 0
 
 - name: Display topology json when verbosity >= 1, skip otherwise
   debug:
     msg: "{{ interfaces_json }}"
     verbosity: 1
+  when: interface_list | length > 0
 
 - name: Create output file name
   set_fact:
     json_outfile: "{{ temp_dir }}/{{ inventory_hostname }}.json"
+  when: interface_list | length > 0
 
 - name: Write the json output
   template:
     src: output.j2
     dest: "{{ json_outfile }}"
   delegate_to: localhost
+  when: interface_list | length > 0
 
 - name: Print out the contents of the json output file when verbosity >= 1, skip otherwise
   debug:
     msg: "{{ lookup('file', '{{ json_outfile }}') }}"
     verbosity: 1
+  when: interface_list | length > 0
